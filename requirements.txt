@@ -3,7 +3,7 @@
 # Torch >= 2.1.0 is recommended for torch.compile and SDPA/Flash-Attn integration
 
 torch>=2.1.0
-transformers
+transformers>=4.57.0
 huggingface-hub>=0.23.0
 bitsandbytes>=0.43.0
 accelerate>=0.33.0
@@ -17,4 +17,5 @@ flash-attn>=2.5.6; platform_system=="Linux" and extra=="cuda"
 
 # For running GGUF models with vision support (planned feature)
 # llama-cpp-python[server]
+
 
