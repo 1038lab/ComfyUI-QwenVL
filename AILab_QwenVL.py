@@ -267,7 +267,7 @@ class QwenVLBase:
         model_path = ensure_model(model_name)
         quant_config, dtype = quantization_config(model_name, quant)
         load_kwargs = {
-            "device_map": {"": 0} if (device == "cuda" and torch.cuda.is_available()) else {"": "xpu:0"} if xpu_availiable() else device,
+            "device_map": {"": 0} if (device == "cuda" and torch.cuda.is_available()) else ({"": "xpu:0"} if (device == "xpu" and xpu_availiable()) else device),
             "dtype": dtype,
             "attn_implementation": attn_impl,
             "use_safetensors": True,
