@@ -43,7 +43,7 @@ TOOLTIPS = {
     "keep_model_loaded": "Keeps the model resident in VRAM/RAM after the run so the next prompt skips loading.",
     "seed": "Seed controlling sampling and frame picking; reuse it to reproduce results.",
     "use_torch_compile": "Enable torch.compile('reduce-overhead') on supported CUDA/Torch 2.1+ builds for extra throughput after the first compile.",
-    "device": "Force execution on cuda/cpu/mps or leave auto to follow hardware detection.",
+    "device": "Force execution on cuda/cpu/mps/xpu or leave auto to follow hardware detection.",
     "temperature": "Sampling randomness when num_beams == 1. 0.2–0.4 is focused, 0.7+ is creative.",
     "top_p": "Nucleus sampling cutoff when num_beams == 1. Lower values keep only top tokens; 0.9–0.95 allows more variety.",
     "num_beams": "Beam-search width. Values >1 disable temperature/top_p and trade speed for more stable answers.",
@@ -98,6 +98,8 @@ def load_model_configs():
 if not MODEL_CONFIGS:
     load_model_configs()
 
+def xpu_availiable():
+    return hasattr(torch, "xpu") and torch.xpu.is_available()
 
 def get_device_info():
     gpu = {"available": False, "total_memory": 0, "free_memory": 0}
@@ -117,6 +119,16 @@ def get_device_info():
         device_type = "apple_silicon"
         recommended = "mps"
         gpu = {"available": True, "total_memory": 0, "free_memory": 0}
+    elif xpu_availiable():
+        props = torch.xpu.get_device_properties(0)
+        total = props.total_memory / 1024**3
+        gpu = {
+            "available": True,
+            "total_memory": total,
+            "free_memory": total - (torch.xpu.memory_allocated(0) / 1024**3),
+        }
+        device_type = "intel_xpu"
+        recommended = "xpu"
     sys_mem = psutil.virtual_memory()
     return {
         "gpu": gpu,
@@ -138,7 +150,6 @@ def flash_attn_available():
         return False
     major, _ = torch.cuda.get_device_capability()
     return major >= 8
-
 
 def resolve_attention_mode(mode):
     if mode == "sdpa":
@@ -212,6 +223,8 @@ def quantization_config(model_name, quantization):
         return cfg, None
     if quantization == Quantization.Q8:
         return BitsAndBytesConfig(load_in_8bit=True), None
+    if xpu_availiable():
+        return None, torch.bfloat16
     return None, torch.float16 if torch.cuda.is_available() else torch.float32
 
 
@@ -232,6 +245,8 @@ class QwenVLBase:
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        elif xpu_availiable():
+            torch.xpu.empty_cache()
 
     def load_model(
         self,
@@ -252,7 +267,7 @@ class QwenVLBase:
         model_path = ensure_model(model_name)
         quant_config, dtype = quantization_config(model_name, quant)
         load_kwargs = {
-            "device_map": {"": 0} if device == "cuda" and torch.cuda.is_available() else device,
+            "device_map": {"": 0} if (device == "cuda" and torch.cuda.is_available()) else {"": "xpu:0"} if xpu_availiable() else device,
             "dtype": dtype,
             "attn_implementation": attn_impl,
             "use_safetensors": True,
@@ -334,6 +349,8 @@ class QwenVLBase:
         outputs = self.model.generate(**model_inputs, **kwargs)
         if torch.cuda.is_available():
             torch.cuda.synchronize()
+        elif xpu_availiable():
+            torch.xpu.synchronize()
         input_len = model_inputs["input_ids"].shape[-1]
         text = self.tokenizer.decode(outputs[0, input_len:], skip_special_tokens=True)
         return text.strip()
@@ -466,7 +483,7 @@ class AILab_QwenVL_Advanced(QwenVLBase):
                 "quantization": (Quantization.get_values(), {"default": Quantization.FP16.value, "tooltip": TOOLTIPS["quantization"]}),
                 "attention_mode": (ATTENTION_MODES, {"default": "auto", "tooltip": TOOLTIPS["attention_mode"]}),
                 "use_torch_compile": ("BOOLEAN", {"default": False, "tooltip": TOOLTIPS["use_torch_compile"]}),
-                "device": (["auto", "cuda", "cpu", "mps"], {"default": "auto", "tooltip": TOOLTIPS["device"]}),
+                "device": (["auto", "cuda", "cpu", "mps", "xpu"], {"default": "auto", "tooltip": TOOLTIPS["device"]}),
                 "preset_prompt": (prompts, {"default": default_prompt, "tooltip": TOOLTIPS["preset_prompt"]}),
                 "custom_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": TOOLTIPS["custom_prompt"]}),
                 "max_tokens": ("INT", {"default": 512, "min": 64, "max": 4096, "tooltip": TOOLTIPS["max_tokens"]}),
