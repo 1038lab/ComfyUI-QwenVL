@@ -159,7 +159,13 @@ def ensure_model(model_name):
     if not info:
         raise ValueError(f"Model '{model_name}' not in config")
     repo_id = info["repo_id"]
-    models_dir = Path(folder_paths.models_dir) / "LLM" / "Qwen-VL"
+    # Use ComfyUI's multi-path system if available
+    llm_paths = folder_paths.get_folder_paths("LLM") if "LLM" in folder_paths.folder_names_and_paths else []
+    if llm_paths:
+        models_dir = Path(llm_paths[0]) / "Qwen-VL"
+    else:
+        # Fallback to default behavior
+        models_dir = Path(folder_paths.models_dir) / "LLM" / "Qwen-VL"
     models_dir.mkdir(parents=True, exist_ok=True)
     target = models_dir / repo_id.split("/")[-1]
     snapshot_download(
