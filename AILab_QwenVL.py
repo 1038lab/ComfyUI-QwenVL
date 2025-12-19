@@ -22,6 +22,7 @@ import numpy as np
 import psutil
 import torch
 from PIL import Image
+
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer, BitsAndBytesConfig
 
@@ -39,6 +40,7 @@ TOOLTIPS = {
     "attention_mode": "auto tries flash-attn v2 when installed and falls back to SDPA. Only override when debugging attention backends.",
     "preset_prompt": "Built-in instruction describing how Qwen-VL should analyze the media input.",
     "custom_prompt": "Optional override—when filled it completely replaces the preset template.",
+    "system_prompt": "Optional system-level instruction (role='system'). If provided it will be sent as a separate system role and NOT replace preset/custom (which remain the user prompt).",
     "max_tokens": "Maximum number of new tokens to decode. Larger values yield longer answers but consume more time and memory.",
     "keep_model_loaded": "Keeps the model resident in VRAM/RAM after the run so the next prompt skips loading.",
     "seed": "Seed controlling sampling and frame picking; reuse it to reproduce results.",
@@ -292,7 +294,8 @@ class QwenVLBase:
     @torch.no_grad()
     def generate(
         self,
-        prompt_text,
+        system_text,      # NEW: system role text (may be empty)
+        prompt_text,      # user prompt text (preset/custom)
         image,
         video,
         frame_count,
@@ -302,20 +305,28 @@ class QwenVLBase:
         num_beams,
         repetition_penalty,
     ):
-        conversation = [{"role": "user", "content": []}]
+        # Build conversation. If system_text is set, include a system role first.
+        conversation = []
+        if system_text and system_text.strip():
+            conversation.append({"role": "system", "content": [{"type": "text", "text": system_text.strip()}]})
+
+        # Build the user message content (images/video + text)
+        user_content = []
         if image is not None:
-            conversation[0]["content"].append({"type": "image", "image": self.tensor_to_pil(image)})
+            user_content.append({"type": "image", "image": self.tensor_to_pil(image)})
         if video is not None:
             frames = [self.tensor_to_pil(frame) for frame in video]
             if len(frames) > frame_count:
                 idx = np.linspace(0, len(frames) - 1, frame_count, dtype=int)
                 frames = [frames[i] for i in idx]
             if frames:
-                conversation[0]["content"].append({"type": "video", "video": frames})
-        conversation[0]["content"].append({"type": "text", "text": prompt_text})
+                user_content.append({"type": "video", "video": frames})
+        user_content.append({"type": "text", "text": prompt_text})
+        conversation.append({"role": "user", "content": user_content})
+
         chat = self.processor.apply_chat_template(conversation, tokenize=False, add_generation_prompt=True)
-        images = [item["image"] for item in conversation[0]["content"] if item["type"] == "image"]
-        video_frames = [frame for item in conversation[0]["content"] if item["type"] == "video" for frame in item["video"]]
+        images = [item["image"] for item in user_content if item["type"] == "image"]
+        video_frames = [frame for item in user_content if item["type"] == "video" for frame in item["video"]]
         videos = [video_frames] if video_frames else None
         processed = self.processor(text=chat, images=images or None, videos=videos, return_tensors="pt")
         model_device = next(self.model.parameters()).device
@@ -350,6 +361,7 @@ class QwenVLBase:
         quantization,
         preset_prompt,
         custom_prompt,
+        system_prompt,    # NEW parameter (string)
         image,
         video,
         frame_count,
@@ -365,9 +377,16 @@ class QwenVLBase:
         device,
     ):
         torch.manual_seed(seed)
+        # Keep backward-compatible behavior for the user prompt:
+        # existing logic: custom_prompt (if present) overrides preset_prompt.
         prompt = SYSTEM_PROMPTS.get(preset_prompt, preset_prompt)
         if custom_prompt and custom_prompt.strip():
             prompt = custom_prompt.strip()
+
+        # Determine the system text to send: prefer explicit system_prompt param;
+        # if it's empty, we will NOT automatically convert preset -> system to remain backward-compatible.
+        system_text = system_prompt.strip() if system_prompt and system_prompt.strip() else ""
+
         self.load_model(
             model_name,
             quantization,
@@ -378,7 +397,8 @@ class QwenVLBase:
         )
         try:
             text = self.generate(
-                prompt,
+                system_text,   # NEW: system role text (may be empty)
+                prompt,        # user prompt (preset/custom) as before
                 image,
                 video,
                 frame_count,
@@ -409,6 +429,7 @@ class AILab_QwenVL(QwenVLBase):
                 "attention_mode": (ATTENTION_MODES, {"default": "auto", "tooltip": TOOLTIPS["attention_mode"]}),
                 "preset_prompt": (prompts, {"default": default_prompt, "tooltip": TOOLTIPS["preset_prompt"]}),
                 "custom_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": TOOLTIPS["custom_prompt"]}),
+                "system_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": TOOLTIPS["system_prompt"]}),
                 "max_tokens": ("INT", {"default": 512, "min": 64, "max": 2048, "tooltip": TOOLTIPS["max_tokens"]}),
                 "keep_model_loaded": ("BOOLEAN", {"default": True, "tooltip": TOOLTIPS["keep_model_loaded"]}),
                 "seed": ("INT", {"default": 1, "min": 1, "max": 2**32 - 1, "tooltip": TOOLTIPS["seed"]}),
@@ -430,6 +451,7 @@ class AILab_QwenVL(QwenVLBase):
         quantization,
         preset_prompt,
         custom_prompt,
+        system_prompt,      # NEW param
         attention_mode,
         max_tokens,
         keep_model_loaded,
@@ -442,6 +464,7 @@ class AILab_QwenVL(QwenVLBase):
             quantization,
             preset_prompt,
             custom_prompt,
+            system_prompt,   # thread it through
             image,
             video,
             16,
@@ -475,6 +498,7 @@ class AILab_QwenVL_Advanced(QwenVLBase):
                 "device": (["auto", "cuda", "cpu", "mps"], {"default": "auto", "tooltip": TOOLTIPS["device"]}),
                 "preset_prompt": (prompts, {"default": default_prompt, "tooltip": TOOLTIPS["preset_prompt"]}),
                 "custom_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": TOOLTIPS["custom_prompt"]}),
+                "system_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": TOOLTIPS["system_prompt"]}),
                 "max_tokens": ("INT", {"default": 512, "min": 64, "max": 4096, "tooltip": TOOLTIPS["max_tokens"]}),
                 "temperature": ("FLOAT", {"default": 0.6, "min": 0.1, "max": 1.0, "tooltip": TOOLTIPS["temperature"]}),
                 "top_p": ("FLOAT", {"default": 0.9, "min": 0.0, "max": 1.0, "tooltip": TOOLTIPS["top_p"]}),
@@ -504,6 +528,7 @@ class AILab_QwenVL_Advanced(QwenVLBase):
         device,
         preset_prompt,
         custom_prompt,
+        system_prompt,     # NEW param
         max_tokens,
         temperature,
         top_p,
@@ -520,6 +545,7 @@ class AILab_QwenVL_Advanced(QwenVLBase):
             quantization,
             preset_prompt,
             custom_prompt,
+            system_prompt,   # thread through
             image,
             video,
             frame_count,
@@ -534,6 +560,7 @@ class AILab_QwenVL_Advanced(QwenVLBase):
             use_torch_compile,
             device,
         )
+
 
 
 NODE_CLASS_MAPPINGS = {
