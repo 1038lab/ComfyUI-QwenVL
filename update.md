@@ -9,6 +9,8 @@ We've expanded our GGUF model support with three powerful new nodes:
 - **Qwen Prompt Enhancer (GGUF)** — GGUF text-only node for intelligent prompt rewriting and enhancement (not a vision model). Delivers rapid prompt enhancement with minimal resource usage, perfect for iterative prompt refinement workflows.
 - **Qwen Prompt Enhancer (Transformers)** — Uses Qwen3 transformer model to enhance and rewrite prompts. Analyzes your input prompt and intelligently expands it with better detail, structure, and clarity for improved generation quality. Offers full model capabilities with precise control over the enhancement process.
 
+![Qwen V2.0.0](https://github.com/user-attachments/assets/5187b98c-ccb5-4b57-858d-e43fbfb04a98)
+
 ### Enhanced GPU Device Selection (Advanced Node)
 The **QwenVL (Advanced)** node now offers flexible GPU device management:
 
@@ -34,14 +36,14 @@ The **QwenVL (Advanced)** node now offers flexible GPU device management:
 - Enhanced download progress logging with clear status messages during model download and cache reuse
 - Token generation speed reporting (`tok/s`) when available — helps compare different models and quantization levels
 
-![600346260_122188475918461193_3763807942053883496_n](https://github.com/user-attachments/assets/bc9450d9-1695-452d-9e46-f05a4bf315de)
+![QwenVL (GGUF) Vision Node](https://github.com/user-attachments/assets/bc9450d9-1695-452d-9e46-f05a4bf315de)
 
 **Qwen Prompt Enhancer (GGUF):**
 - Updated built-in presets to reduce "junk talk" and return clean enhanced prompts more consistently
 - Refined system prompts that minimize verbose output
 - More reliable prompt-only text generation
 
-![600395376_122188477502461193_4739750871920513665_n](https://github.com/user-attachments/assets/d809f6fa-b43f-40c3-89e1-d03dc5fa7dee)
+![Qwen Prompt Enhancer (GGUF)](https://github.com/user-attachments/assets/d809f6fa-b43f-40c3-89e1-d03dc5fa7dee)
 
 ### Transformers Nodes: GPU and Attention Stability
 
