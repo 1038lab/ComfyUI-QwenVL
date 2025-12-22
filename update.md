@@ -1,4 +1,78 @@
 # ComfyUI-QwenVL Update Log
+# Release Notes: v2.0.0 (2025-12-22)
+
+### New GGUF Nodes
+We've expanded our GGUF model support with three powerful new nodes:
+
+- **QwenVL (GGUF)** — Lightweight GGUF-based vision node for image/video understanding and text generation. Offers significantly faster inference speed compared to Transformers models, making it ideal for real-time workflows and resource-constrained environments.
+- **QwenVL (GGUF) Advanced** — Enhanced GGUF vision node with additional controls for advanced users. Maintains the ultra-fast inference speed of GGUF while providing fine-tuned control over generation parameters.
+- **Qwen Prompt Enhancer (GGUF)** — GGUF text-only node for intelligent prompt rewriting and enhancement (not a vision model). Delivers rapid prompt enhancement with minimal resource usage, perfect for iterative prompt refinement workflows.
+- **Qwen Prompt Enhancer (Transformers)** — Uses Qwen3 transformer model to enhance and rewrite prompts. Analyzes your input prompt and intelligently expands it with better detail, structure, and clarity for improved generation quality. Offers full model capabilities with precise control over the enhancement process.
+
+### Enhanced GPU Device Selection (Advanced Node)
+The **QwenVL (Advanced)** node now offers flexible GPU device management:
+
+- **Manual GPU selection** — Choose specific CUDA devices (e.g., `cuda:1`, `cuda:2`) instead of defaulting to `cuda:0`
+- **Automatic device detection** — Dynamically discovers all available CUDA devices on your system
+- **Improved device mapping** — More consistent behavior and better resource allocation
+- **OOM prevention** — Route models to underutilized GPUs when your primary GPU is handling diffusion workloads
+
+*Note: The basic QwenVL node continues to use automatic device selection for simplicity*
+
+---
+
+## ✨ Improvements
+
+### GGUF: Quality and Usability
+
+**Cleaner Outputs by Default:**
+- Automatically removes common "thinking/planning" content and leaked tokens (`<think>`, `<im_start>`, `<im_end>`)
+- Users now receive clean, usable prompt-only or answer-only text without manual filtering
+
+**QwenVL (GGUF) Vision Node:**
+- Model dropdown now displays actual `.gguf` filenames with automatic deduplication for easier model identification
+- Enhanced download progress logging with clear status messages during model download and cache reuse
+- Token generation speed reporting (`tok/s`) when available — helps compare different models and quantization levels
+
+**Qwen Prompt Enhancer (GGUF):**
+- Updated built-in presets to reduce "junk talk" and return clean enhanced prompts more consistently
+- Refined system prompts that minimize verbose output
+- More reliable prompt-only text generation
+
+### Transformers Nodes: GPU and Attention Stability
+
+**Advanced GPU Routing:**
+- `QwenVL (Advanced)` supports selecting specific GPUs (e.g., `cuda:1`, `cuda:2`) to avoid OOM when GPU0 is busy
+- Improved device-mapping logic for more consistent behavior across different hardware configurations
+
+**Attention Backend Stability:**
+- Flash-Attention auto mode now behaves safely across all platforms
+- Gracefully falls back to SDPA when Flash-Attention dependencies are unavailable
+- Prevents runtime errors from missing or incompatible Flash-Attention installations
+
+---
+
+## 🐛 Bug Fixes
+
+### QwenVL (Transformers) Stability
+- **Fixed:** Invalid CUDA device handling that caused crashes with incorrect device specifications (e.g., device `"0"` or malformed `device_map`)  
+  Related issue: https://github.com/1038lab/ComfyUI-QwenVL/issues/21
+- **Fixed:** Flash-Attention detection now restricted to Linux systems only, preventing Windows metadata errors
+- **Fixed:** Flash-Attention auto mode fallback mechanism to eliminate runtime errors when dependencies are unavailable
+
+---
+
+## 📚 Documentation & Dependencies
+
+### New Documentation
+- **Added:** Comprehensive installation guide for vision-capable `llama-cpp-python`  
+  See `docs/LLAMA_CPP_PYTHON_VISION_INSTALL.md` for:
+  - JamePeng fork wheel installation instructions (wheel source: https://github.com/JamePeng/llama-cpp-python/releases/)
+  - Handler verification steps
+  - Common numpy/OpenCV conflict resolution 
+
+### Dependencies
+- **Added:** `hf_xet` to `requirements.txt` for improved Hugging Face download performance and to eliminate Xet fallback warnings
 ## Version 1.1.0 (2025/11/11)
 
 ⚡ Major Performance Optimization Update
