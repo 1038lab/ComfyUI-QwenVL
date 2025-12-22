@@ -1,0 +1,15 @@
+# GGUF backend requirements (vision-capable llama-cpp-python).
+# Follow the platform-specific install guide:
+# docs/LLAMA_CPP_PYTHON_VISION_INSTALL.md
+#
+# Linux (CUDA) example:
+# pip install --upgrade --force-reinstall --no-cache-dir \
+#   llama-cpp-python==<version> --extra-index-url <vision-wheel-index>
+#
+# Windows example:
+# 1) Install a vision-capable wheel from the guide.
+# 2) Then verify with:
+#    python -c "import llama_cpp; print(llama_cpp.__version__)"
+#
+# Placeholder only; do not rely on this line alone:
+# llama-cpp-python

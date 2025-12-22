@@ -1,21 +1,20 @@
 # ComfyUI-QwenVL requirements
-# Note: Qwen3-VL and Qwen2.5-VL models require transformers >= 4.57.0 (for Vision2Seq support)
-# Torch >= 2.1.0 is recommended for torch.compile and SDPA/Flash-Attn integration
+# Note: Qwen3-VL models require transformers >= 4.57.0
 
-torch>=2.1.0
-transformers>=4.57.0
-huggingface-hub>=0.23.0
-bitsandbytes>=0.43.0
-accelerate>=0.33.0
+transformers
+torch
+huggingface-hub
+hf_xet
 psutil
 numpy
 Pillow
 opencv-python
+bitsandbytes
+accelerate
 
-# Optional (for FlashAttention v2 optimization)
-flash-attn>=2.5.6; platform_system=="Linux" and extra=="cuda"
+# For running GGUF models with vision support
 
-# For running GGUF models with vision support (planned feature)
+# The [server] extra installs necessary components for multimodal models
 # llama-cpp-python[server]
 
 

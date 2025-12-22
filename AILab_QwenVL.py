@@ -15,6 +15,7 @@
 
 import gc
 import json
+import platform
 from enum import Enum
 from pathlib import Path
 
@@ -28,9 +29,13 @@ from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer, B
 import folder_paths
 
 NODE_DIR = Path(__file__).parent
-CONFIG_PATH = NODE_DIR / "config.json"
-MODEL_CONFIGS = {}
+CONFIG_PATH = NODE_DIR / "hf_models.json"
+SYSTEM_PROMPTS_PATH = NODE_DIR / "AILab_System_Prompts.json"
+HF_VL_MODELS: dict[str, dict] = {}
+HF_TEXT_MODELS: dict[str, dict] = {}
+HF_ALL_MODELS: dict[str, dict] = {}
 SYSTEM_PROMPTS = {}
+PRESET_PROMPTS: list[str] = ["Describe this image in detail."]
 
 
 TOOLTIPS = {
@@ -43,7 +48,7 @@ TOOLTIPS = {
     "keep_model_loaded": "Keeps the model resident in VRAM/RAM after the run so the next prompt skips loading.",
     "seed": "Seed controlling sampling and frame picking; reuse it to reproduce results.",
     "use_torch_compile": "Enable torch.compile('reduce-overhead') on supported CUDA/Torch 2.1+ builds for extra throughput after the first compile.",
-    "device": "Force execution on cuda/cpu/mps or leave auto to follow hardware detection.",
+    "device": "Choose where to run the model: auto, cpu, mps, or cuda:x for multi-GPU systems.",
     "temperature": "Sampling randomness when num_beams == 1. 0.2–0.4 is focused, 0.7+ is creative.",
     "top_p": "Nucleus sampling cutoff when num_beams == 1. Lower values keep only top tokens; 0.9–0.95 allows more variety.",
     "num_beams": "Beam-search width. Values >1 disable temperature/top_p and trade speed for more stable answers.",
@@ -73,29 +78,61 @@ ATTENTION_MODES = ["auto", "flash_attention_2", "sdpa"]
 
 
 def load_model_configs():
-    global MODEL_CONFIGS, SYSTEM_PROMPTS
+    global HF_VL_MODELS, HF_TEXT_MODELS, HF_ALL_MODELS, SYSTEM_PROMPTS, PRESET_PROMPTS
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as fh:
-            MODEL_CONFIGS = json.load(fh)
-            SYSTEM_PROMPTS = MODEL_CONFIGS.get("_system_prompts", {})
+            data = json.load(fh) or {}
+        if "hf_vl_models" in data or "hf_text_models" in data:
+            HF_VL_MODELS = data.get("hf_vl_models") or {}
+            HF_TEXT_MODELS = data.get("hf_text_models") or {}
+        else:
+            HF_VL_MODELS = {k: v for k, v in data.items() if not k.startswith("_")}
+            HF_TEXT_MODELS = {}
+        SYSTEM_PROMPTS = data.get("_system_prompts", {})
+        PRESET_PROMPTS = data.get("_preset_prompts", PRESET_PROMPTS)
     except Exception as exc:
         print(f"[QwenVL] Config load failed: {exc}")
-        MODEL_CONFIGS = {}
+        HF_VL_MODELS = {}
+        HF_TEXT_MODELS = {}
+        HF_ALL_MODELS = {}
         SYSTEM_PROMPTS = {}
+    try:
+        with open(SYSTEM_PROMPTS_PATH, "r", encoding="utf-8") as fh:
+            data = json.load(fh) or {}
+        qwenvl_prompts = data.get("qwenvl") or {}
+        preset_override = data.get("_preset_prompts") or []
+        if isinstance(qwenvl_prompts, dict) and qwenvl_prompts:
+            SYSTEM_PROMPTS = qwenvl_prompts
+        if isinstance(preset_override, list) and preset_override:
+            PRESET_PROMPTS = preset_override
+    except FileNotFoundError:
+        pass
+    except Exception as exc:
+        print(f"[QwenVL] System prompts load failed: {exc}")
     custom = NODE_DIR / "custom_models.json"
     if custom.exists():
         try:
             with open(custom, "r", encoding="utf-8") as fh:
                 data = json.load(fh) or {}
-            models = data.get("hf_models", {}) or data.get("models", {})
-            if models:
-                MODEL_CONFIGS.update(models)
-                print(f"[QwenVL] Loaded {len(models)} custom models")
+            custom_vl = data.get("hf_vl_models") or {}
+            custom_text = data.get("hf_text_models") or {}
+            legacy = data.get("hf_models", {}) or data.get("models", {})
+            if isinstance(custom_vl, dict) and custom_vl:
+                HF_VL_MODELS.update(custom_vl)
+                print(f"[QwenVL] Loaded {len(custom_vl)} custom VL models")
+            if isinstance(custom_text, dict) and custom_text:
+                HF_TEXT_MODELS.update(custom_text)
+                print(f"[QwenVL] Loaded {len(custom_text)} custom text models")
+            if isinstance(legacy, dict) and legacy:
+                HF_VL_MODELS.update(legacy)
+                print(f"[QwenVL] Loaded {len(legacy)} custom legacy models")
         except Exception as exc:
             print(f"[QwenVL] custom_models.json skipped: {exc}")
+    HF_ALL_MODELS = dict(HF_VL_MODELS)
+    HF_ALL_MODELS.update(HF_TEXT_MODELS)
 
 
-if not MODEL_CONFIGS:
+if not HF_ALL_MODELS:
     load_model_configs()
 
 
@@ -129,15 +166,66 @@ def get_device_info():
     }
 
 
+def normalize_device_choice(device: str) -> str:
+    device = (device or "auto").strip()
+    if device == "auto":
+        return "auto"
+
+    if device.isdigit():
+        device = f"cuda:{int(device)}"
+
+    if device == "cuda":
+        if not torch.cuda.is_available():
+            print("[QwenVL] CUDA requested but not available, falling back to CPU")
+            return "cpu"
+        return "cuda"
+
+    if device.startswith("cuda"):
+        if not torch.cuda.is_available():
+            print("[QwenVL] CUDA requested but not available, falling back to CPU")
+            return "cpu"
+        if ":" in device:
+            try:
+                device_idx = int(device.split(":", 1)[1])
+                if device_idx >= torch.cuda.device_count():
+                    print(f"[QwenVL] CUDA device {device_idx} not available, using cuda:0")
+                    return "cuda:0"
+            except (ValueError, IndexError):
+                print(f"[QwenVL] Invalid CUDA device format '{device}', using cuda:0")
+                return "cuda:0"
+        return device
+
+    if device == "mps":
+        if not (getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()):
+            print("[QwenVL] MPS requested but not available, falling back to CPU")
+            return "cpu"
+        return "mps"
+
+    return device
+
+
 def flash_attn_available():
+    if platform.system() != "Linux":
+        return False
     if not torch.cuda.is_available():
         return False
+
+    major, _ = torch.cuda.get_device_capability()
+    if major < 8:
+        return False
+
     try:
         import flash_attn  # noqa: F401
     except Exception:
         return False
-    major, _ = torch.cuda.get_device_capability()
-    return major >= 8
+
+    try:
+        import importlib.metadata as importlib_metadata
+        _ = importlib_metadata.version("flash_attn")
+    except Exception:
+        return False
+
+    return True
 
 
 def resolve_attention_mode(mode):
@@ -153,12 +241,12 @@ def resolve_attention_mode(mode):
     print("[QwenVL] Flash-Attn auto mode: dependency not ready, using SDPA")
     return "sdpa"
 
-
 def ensure_model(model_name):
-    info = MODEL_CONFIGS.get(model_name)
+    info = HF_ALL_MODELS.get(model_name)
     if not info:
         raise ValueError(f"Model '{model_name}' not in config")
     repo_id = info["repo_id"]
+
     # Use ComfyUI's multi-path system if available
     llm_paths = folder_paths.get_folder_paths("LLM") if "LLM" in folder_paths.folder_names_and_paths else []
     if llm_paths:
@@ -166,8 +254,15 @@ def ensure_model(model_name):
     else:
         # Fallback to default behavior
         models_dir = Path(folder_paths.models_dir) / "LLM" / "Qwen-VL"
+
     models_dir.mkdir(parents=True, exist_ok=True)
     target = models_dir / repo_id.split("/")[-1]
+
+    # ✅ If already downloaded (has weights), use local without calling snapshot_download
+    if target.exists() and target.is_dir():
+        if any(target.glob("*.safetensors")) or any(target.glob("*.bin")):
+            return str(target)
+
     snapshot_download(
         repo_id=repo_id,
         local_dir=str(target),
@@ -176,9 +271,8 @@ def ensure_model(model_name):
     )
     return str(target)
 
-
 def enforce_memory(model_name, quantization, device_info):
-    info = MODEL_CONFIGS.get(model_name, {})
+    info = HF_ALL_MODELS.get(model_name, {})
     requirements = info.get("vram_requirement", {})
     mapping = {
         Quantization.Q4: requirements.get("4bit", 0),
@@ -205,7 +299,7 @@ def enforce_memory(model_name, quantization, device_info):
 
 
 def quantization_config(model_name, quantization):
-    info = MODEL_CONFIGS.get(model_name, {})
+    info = HF_ALL_MODELS.get(model_name, {})
     if info.get("quantized"):
         return None, None
     if quantization == Quantization.Q4:
@@ -219,7 +313,6 @@ def quantization_config(model_name, quantization):
     if quantization == Quantization.Q8:
         return BitsAndBytesConfig(load_in_8bit=True), None
     return None, torch.float16 if torch.cuda.is_available() else torch.float32
-
 
 class QwenVLBase:
     def __init__(self):
@@ -250,7 +343,8 @@ class QwenVLBase:
     ):
         quant = enforce_memory(model_name, Quantization.from_value(quant_value), self.device_info)
         attn_impl = resolve_attention_mode(attention_mode)
-        device = self.device_info["recommended_device"] if device_choice == "auto" else device_choice
+        device_requested = self.device_info["recommended_device"] if device_choice == "auto" else device_choice
+        device = normalize_device_choice(device_requested)
         signature = (model_name, quant.value, attn_impl, device, use_compile)
         if keep_model_loaded and self.model is not None and self.current_signature == signature:
             return
@@ -258,7 +352,7 @@ class QwenVLBase:
         model_path = ensure_model(model_name)
         quant_config, dtype = quantization_config(model_name, quant)
         load_kwargs = {
-            "device_map": {"": 0} if device == "cuda" and torch.cuda.is_available() else device,
+            "device_map": device if device != "auto" else "auto",
             "dtype": dtype,
             "attn_implementation": attn_impl,
             "use_safetensors": True,
@@ -270,7 +364,7 @@ class QwenVLBase:
         self.model.config.use_cache = True
         if hasattr(self.model, "generation_config"):
             self.model.generation_config.use_cache = True
-        if use_compile and torch.cuda.is_available():
+        if use_compile and device.startswith("cuda") and torch.cuda.is_available():
             try:
                 self.model = torch.compile(self.model, mode="reduce-overhead")
                 print("[QwenVL] torch.compile enabled")
@@ -344,26 +438,7 @@ class QwenVLBase:
         text = self.tokenizer.decode(outputs[0, input_len:], skip_special_tokens=True)
         return text.strip()
 
-    def run(
-        self,
-        model_name,
-        quantization,
-        preset_prompt,
-        custom_prompt,
-        image,
-        video,
-        frame_count,
-        max_tokens,
-        temperature,
-        top_p,
-        num_beams,
-        repetition_penalty,
-        seed,
-        keep_model_loaded,
-        attention_mode,
-        use_torch_compile,
-        device,
-    ):
+    def run(self, model_name, quantization, preset_prompt, custom_prompt, image, video, frame_count, max_tokens, temperature, top_p, num_beams, repetition_penalty, seed, keep_model_loaded, attention_mode, use_torch_compile, device):
         torch.manual_seed(seed)
         prompt = SYSTEM_PROMPTS.get(preset_prompt, preset_prompt)
         if custom_prompt and custom_prompt.strip():
@@ -397,9 +472,9 @@ class QwenVLBase:
 class AILab_QwenVL(QwenVLBase):
     @classmethod
     def INPUT_TYPES(cls):
-        models = [name for name in MODEL_CONFIGS.keys() if not name.startswith("_")]
+        models = list(HF_VL_MODELS.keys())
         default_model = models[0] if models else "Qwen3-VL-4B-Instruct"
-        prompts = MODEL_CONFIGS.get("_preset_prompts", ["Describe this image in detail."])
+        prompts = PRESET_PROMPTS or ["Describe this image in detail."]
         preferred_prompt = "🖼️ Detailed Description"
         default_prompt = preferred_prompt if preferred_prompt in prompts else prompts[0]
         return {
@@ -424,55 +499,30 @@ class AILab_QwenVL(QwenVLBase):
     FUNCTION = "process"
     CATEGORY = "🧪AILab/QwenVL"
 
-    def process(
-        self,
-        model_name,
-        quantization,
-        preset_prompt,
-        custom_prompt,
-        attention_mode,
-        max_tokens,
-        keep_model_loaded,
-        seed,
-        image=None,
-        video=None,
-    ):
-        return self.run(
-            model_name,
-            quantization,
-            preset_prompt,
-            custom_prompt,
-            image,
-            video,
-            16,
-            max_tokens,
-            0.6,
-            0.9,
-            1,
-            1.2,
-            seed,
-            keep_model_loaded,
-            attention_mode,
-            False,
-            "auto",
-        )
+    def process(self, model_name, quantization, preset_prompt, custom_prompt, attention_mode, max_tokens, keep_model_loaded, seed, image=None, video=None):
+        return self.run(model_name, quantization, preset_prompt, custom_prompt, image, video, 16, max_tokens, 0.6, 0.9, 1, 1.2, seed, keep_model_loaded, attention_mode, False, "auto")
 
 
 class AILab_QwenVL_Advanced(QwenVLBase):
     @classmethod
     def INPUT_TYPES(cls):
-        models = [name for name in MODEL_CONFIGS.keys() if not name.startswith("_")]
+        models = list(HF_VL_MODELS.keys())
         default_model = models[0] if models else "Qwen3-VL-4B-Instruct"
-        prompts = MODEL_CONFIGS.get("_preset_prompts", ["Describe this image in detail."])
+        prompts = PRESET_PROMPTS or ["Describe this image in detail."]
         preferred_prompt = "🖼️ Detailed Description"
         default_prompt = preferred_prompt if preferred_prompt in prompts else prompts[0]
+
+        num_gpus = torch.cuda.device_count()
+        gpu_list = [f"cuda:{i}" for i in range(num_gpus)]
+        device_options = ["auto", "cpu", "mps"] + gpu_list
+
         return {
             "required": {
                 "model_name": (models, {"default": default_model, "tooltip": TOOLTIPS["model_name"]}),
                 "quantization": (Quantization.get_values(), {"default": Quantization.FP16.value, "tooltip": TOOLTIPS["quantization"]}),
                 "attention_mode": (ATTENTION_MODES, {"default": "auto", "tooltip": TOOLTIPS["attention_mode"]}),
                 "use_torch_compile": ("BOOLEAN", {"default": False, "tooltip": TOOLTIPS["use_torch_compile"]}),
-                "device": (["auto", "cuda", "cpu", "mps"], {"default": "auto", "tooltip": TOOLTIPS["device"]}),
+                "device": (device_options, {"default": "auto", "tooltip": TOOLTIPS["device"]}),
                 "preset_prompt": (prompts, {"default": default_prompt, "tooltip": TOOLTIPS["preset_prompt"]}),
                 "custom_prompt": ("STRING", {"default": "", "multiline": True, "tooltip": TOOLTIPS["custom_prompt"]}),
                 "max_tokens": ("INT", {"default": 512, "min": 64, "max": 4096, "tooltip": TOOLTIPS["max_tokens"]}),
@@ -495,45 +545,8 @@ class AILab_QwenVL_Advanced(QwenVLBase):
     FUNCTION = "process"
     CATEGORY = "🧪AILab/QwenVL"
 
-    def process(
-        self,
-        model_name,
-        quantization,
-        attention_mode,
-        use_torch_compile,
-        device,
-        preset_prompt,
-        custom_prompt,
-        max_tokens,
-        temperature,
-        top_p,
-        num_beams,
-        repetition_penalty,
-        frame_count,
-        keep_model_loaded,
-        seed,
-        image=None,
-        video=None,
-    ):
-        return self.run(
-            model_name,
-            quantization,
-            preset_prompt,
-            custom_prompt,
-            image,
-            video,
-            frame_count,
-            max_tokens,
-            temperature,
-            top_p,
-            num_beams,
-            repetition_penalty,
-            seed,
-            keep_model_loaded,
-            attention_mode,
-            use_torch_compile,
-            device,
-        )
+    def process(self, model_name, quantization, attention_mode, use_torch_compile, device, preset_prompt, custom_prompt, max_tokens, temperature, top_p, num_beams, repetition_penalty, frame_count, keep_model_loaded, seed, image=None, video=None):
+        return self.run(model_name, quantization, preset_prompt, custom_prompt, image, video, frame_count, max_tokens, temperature, top_p, num_beams, repetition_penalty, seed, keep_model_loaded, attention_mode, use_torch_compile, device)
 
 
 NODE_CLASS_MAPPINGS = {

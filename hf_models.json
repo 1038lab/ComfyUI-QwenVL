@@ -1,0 +1,185 @@
+{
+  "hf_vl_models": {
+    "Qwen3-VL-2B-Instruct": {
+      "repo_id": "Qwen/Qwen3-VL-2B-Instruct",
+      "default": true,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 4.0,
+        "8bit": 2.5,
+        "4bit": 1.5
+      }
+    },
+    "Qwen3-VL-2B-Thinking": {
+      "repo_id": "Qwen/Qwen3-VL-2B-Thinking",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 4.0,
+        "8bit": 2.5,
+        "4bit": 1.5
+      }
+    },
+    "Qwen3-VL-2B-Instruct-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-2B-Instruct-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 2.5
+      }
+    },
+    "Qwen3-VL-2B-Thinking-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-2B-Thinking-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 2.5
+      }
+    },
+    "Qwen3-VL-4B-Instruct": {
+      "repo_id": "Qwen/Qwen3-VL-4B-Instruct",
+      "default": true,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 6.0,
+        "8bit": 3.5,
+        "4bit": 2.0
+      }
+    },
+    "Qwen3-VL-4B-Thinking": {
+      "repo_id": "Qwen/Qwen3-VL-4B-Thinking",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 6.0,
+        "8bit": 3.5,
+        "4bit": 2.0
+      }
+    },
+    "Qwen3-VL-4B-Instruct-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-4B-Instruct-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 2.5
+      }
+    },
+    "Qwen3-VL-4B-Thinking-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-4B-Thinking-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 2.5
+      }
+    },
+    "Qwen3-VL-8B-Instruct": {
+      "repo_id": "Qwen/Qwen3-VL-8B-Instruct",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 12.0,
+        "8bit": 7.0,
+        "4bit": 4.5
+      }
+    },
+    "Qwen3-VL-8B-Thinking": {
+      "repo_id": "Qwen/Qwen3-VL-8B-Thinking",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 12.0,
+        "8bit": 7.0,
+        "4bit": 4.5
+      }
+    },
+    "Qwen3-VL-8B-Instruct-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-8B-Instruct-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 7.5
+      }
+    },
+    "Qwen3-VL-8B-Thinking-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-8B-Thinking-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 7.5
+      }
+    },
+    "Qwen3-VL-32B-Instruct": {
+      "repo_id": "Qwen/Qwen3-VL-32B-Instruct",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 28.0,
+        "8bit": 14.0,
+        "4bit": 8.5
+      }
+    },
+    "Qwen3-VL-32B-Thinking": {
+      "repo_id": "Qwen/Qwen3-VL-32B-Thinking",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 28.0,
+        "8bit": 14.0,
+        "4bit": 8.5
+      }
+    },
+    "Qwen3-VL-32B-Instruct-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-32B-Instruct-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 24.0
+      }
+    },
+    "Qwen3-VL-32B-Thinking-FP8": {
+      "repo_id": "Qwen/Qwen3-VL-32B-Thinking-FP8",
+      "default": false,
+      "quantized": true,
+      "vram_requirement": {
+        "full": 24.0
+      }
+    },
+    "Qwen2.5-VL-3B-Instruct": {
+      "repo_id": "Qwen/Qwen2.5-VL-3B-Instruct",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 6.0,
+        "8bit": 3.5,
+        "4bit": 2.0
+      }
+    },
+    "Qwen2.5-VL-7B-Instruct": {
+      "repo_id": "Qwen/Qwen2.5-VL-7B-Instruct",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 15.0,
+        "8bit": 8.5,
+        "4bit": 5.0
+      }
+    }
+  },
+  "hf_text_models": {
+    "Qwen3-0.6B": {
+      "repo_id": "Qwen/Qwen3-0.6B",
+      "default": false,
+      "quantized": false
+    },
+    "qwen3-4b-Z-Image-Engineer": {
+      "repo_id": "BennyDaBall/qwen3-4b-Z-Image-Engineer",
+      "default": false,
+      "quantized": false
+    },
+    "Qwen3-4B-Instruct-2507": {
+      "repo_id": "Qwen/Qwen3-4B-Instruct-2507",
+      "default": false,
+      "quantized": false
+    }
+  }
+}
