@@ -1,0 +1,364 @@
+{
+  "id": "afd623e3-56b5-44d1-915f-4b020a0c435d",
+  "revision": 0,
+  "last_node_id": 25,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 17,
+      "type": "AILab_QwenVL_GGUF_Advanced",
+      "pos": [
+        1090.7435866951005,
+        541.3632089660127
+      ],
+      "size": [
+        340,
+        516
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "video",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "RESPONSE",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AILab_QwenVL_GGUF_Advanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        }
+      },
+      "widgets_values": [
+        "Qwen2.5-VL-3B-Instruct-BF16.gguf",
+        "auto",
+        "🖼️ Detailed Description",
+        "",
+        512,
+        0.6,
+        0.9,
+        1.2,
+        16,
+        8192,
+        512,
+        -1,
+        4096,
+        0,
+        4194304,
+        true,
+        1,
+        "randomize"
+      ],
+      "color": "#474539",
+      "bgcolor": "#374445"
+    },
+    {
+      "id": 21,
+      "type": "AILab_QwenVL_Advanced",
+      "pos": [
+        1090.7435866951005,
+        1103.0165621245635
+      ],
+      "size": [
+        340,
+        468
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "video",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "RESPONSE",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AILab_QwenVL_Advanced",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        }
+      },
+      "widgets_values": [
+        "Qwen3-VL-2B-Instruct",
+        "None (FP16)",
+        "auto",
+        false,
+        "auto",
+        "🖼️ Detailed Description",
+        "",
+        512,
+        0.6,
+        0.9,
+        1,
+        1.2,
+        16,
+        true,
+        1,
+        "randomize"
+      ],
+      "color": "#28403f",
+      "bgcolor": "#374539"
+    },
+    {
+      "id": 20,
+      "type": "AILab_QwenVL",
+      "pos": [
+        728.3779414208888,
+        1103.0165621245635
+      ],
+      "size": [
+        340,
+        300
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "video",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "RESPONSE",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "AILab_QwenVL",
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {},
+          "version": "7.5.2"
+        }
+      },
+      "widgets_values": [
+        "Qwen3-VL-2B-Instruct",
+        "None (FP16)",
+        "auto",
+        "🖼️ Detailed Description",
+        "",
+        512,
+        true,
+        1,
+        "randomize"
+      ],
+      "color": "#28403f",
+      "bgcolor": "#374539"
+    },
+    {
+      "id": 23,
+      "type": "AILab_QwenVL_GGUF_PromptEnhancer",
+      "pos": [
+        1453.109231969312,
+        541.3632089660127
+      ],
+      "size": [
+        340,
+        382
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "ENHANCED_OUTPUT",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        },
+        "Node name for S&R": "AILab_QwenVL_GGUF_PromptEnhancer"
+      },
+      "widgets_values": [
+        "Qwen3-4B-Q4_K_M.gguf",
+        "",
+        "📝 Enhance",
+        "",
+        256,
+        0.7,
+        0.9,
+        1.1,
+        false,
+        "auto",
+        1,
+        "randomize"
+      ],
+      "color": "#374445",
+      "bgcolor": "#474539"
+    },
+    {
+      "id": 24,
+      "type": "AILab_QwenVL_PromptEnhancer",
+      "pos": [
+        1453.109231969312,
+        1103.0165621245635
+      ],
+      "size": [
+        340,
+        454
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "ENHANCED_OUTPUT",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        },
+        "Node name for S&R": "AILab_QwenVL_PromptEnhancer"
+      },
+      "widgets_values": [
+        "Qwen3-0.6B",
+        "None (FP16)",
+        "auto",
+        false,
+        "auto",
+        "",
+        "📝 Enhance",
+        "",
+        256,
+        0.7,
+        0.9,
+        1.1,
+        true,
+        1,
+        "randomize"
+      ],
+      "color": "#374445",
+      "bgcolor": "#474539"
+    },
+    {
+      "id": 25,
+      "type": "AILab_QwenVL_GGUF",
+      "pos": [
+        728.3779414208888,
+        541.3632089660127
+      ],
+      "size": [
+        340,
+        252
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "name": "video",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "name": "RESPONSE",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "ue_properties": {
+          "widget_ue_connectable": {},
+          "input_ue_unconnectable": {}
+        },
+        "Node name for S&R": "AILab_QwenVL_GGUF"
+      },
+      "widgets_values": [
+        "Qwen3-VL-4B-Thinking-Q4_K_M (bartowski)",
+        "🖼️ Detailed Description",
+        "",
+        512,
+        true,
+        1,
+        "randomize"
+      ],
+      "color": "#474539",
+      "bgcolor": "#2c4045"
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "workflowRendererVersion": "LG",
+    "ue_links": [],
+    "ds": {
+      "scale": 0.8334122337245743,
+      "offset": [
+        -262.4276486336808,
+        -189.67302442340656
+      ]
+    },
+    "frontendVersion": "1.34.9",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}
