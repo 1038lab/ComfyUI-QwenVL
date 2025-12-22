@@ -2,14 +2,20 @@ import { app } from "/scripts/app.js";
 
 const COLOR_THEMES = {
     QwenVL: { nodeColor: "#28403f", nodeBgColor: "#374539", width: 340 },
+    QwenVLGGUF: { nodeColor: "#474539", nodeBgColor: "#2c4045", width: 340 },
     Tools: { nodeColor: "#28403f", nodeBgColor: "#233238", width: 300 },
+    Enhancer: { nodeColor: "#374445", nodeBgColor: "#474539", width: 340 },
 };
 
 const NODE_COLORS = {
     // QwenVL nodes
     "AILab_QwenVL": "QwenVL",
     "AILab_QwenVL_Advanced": "QwenVL",
-    "AILab_QwenVL_PromptEnhancer": "QwenVL",
+    "AILab_QwenVL_PromptEnhancer": "Enhancer",
+    "AILab_QwenVL_GGUF": "QwenVLGGUF",
+    "AILab_QwenVL_GGUF_Advanced": "QwenVLGGUF",
+    "AILab_QwenVL_GGUF_PromptEnhancer": "Enhancer",
+
     // Tools
     "AILab_QwenVL_PromptLibrary": "Tools",
 };
