@@ -34,12 +34,17 @@ The **QwenVL (Advanced)** node now offers flexible GPU device management:
 - Enhanced download progress logging with clear status messages during model download and cache reuse
 - Token generation speed reporting (`tok/s`) when available — helps compare different models and quantization levels
 
+![600346260_122188475918461193_3763807942053883496_n](https://github.com/user-attachments/assets/bc9450d9-1695-452d-9e46-f05a4bf315de)
+
 **Qwen Prompt Enhancer (GGUF):**
 - Updated built-in presets to reduce "junk talk" and return clean enhanced prompts more consistently
 - Refined system prompts that minimize verbose output
 - More reliable prompt-only text generation
 
+![600395376_122188477502461193_4739750871920513665_n](https://github.com/user-attachments/assets/d809f6fa-b43f-40c3-89e1-d03dc5fa7dee)
+
 ### Transformers Nodes: GPU and Attention Stability
+
 
 **Advanced GPU Routing:**
 - `QwenVL (Advanced)` supports selecting specific GPUs (e.g., `cuda:1`, `cuda:2`) to avoid OOM when GPU0 is busy
