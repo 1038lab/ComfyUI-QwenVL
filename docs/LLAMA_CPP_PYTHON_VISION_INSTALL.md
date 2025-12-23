@@ -9,7 +9,7 @@ The upstream `llama-cpp-python` from PyPI often does **not** include these visio
 
 Release wheels (download `.whl` here):
 
-- `https://github.com/JamePeng/llama-cpp-python/releases/`
+- [https://github.com/JamePeng/llama-cpp-python/releases](https://github.com/JamePeng/llama-cpp-python/releases/)
 
 ## 0) Close ComfyUI first
 
