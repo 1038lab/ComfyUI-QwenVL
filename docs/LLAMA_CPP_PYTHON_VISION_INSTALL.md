@@ -47,20 +47,38 @@ C:\AI\ComfyUI\python_embeded\python.exe -m pip freeze > C:\AI\ComfyUI\requiremen
 
 ## 3) Install the Release wheel (recommended)
 
-Pick a `.whl` that matches:
+Download a **Release `.whl`** from:
+[https://github.com/JamePeng/llama-cpp-python/releases/](https://github.com/JamePeng/llama-cpp-python/releases/)
 
-- Python version: `cp310` / `cp311` / `cp312` / `cp313` (must match ComfyUI Python)
-- Platform: Windows `win_amd64`, etc.
+The wheel **must match ALL of the following**:
 
-Install with force reinstall (safer than manual uninstall):
+* **Python version** used by ComfyUI
+  (`cp310` / `cp311` / `cp312` / `cp313`)
+* **Platform**
+  `win_amd64` (Windows 64-bit)
+* **Build type**
 
-```bat
+  * **CPU wheel** → safest option (no CUDA toolkit required)
+  * **CUDA wheel (`cuXXX`)** → requires a compatible CUDA runtime / toolkit
+
+> [!WARNING]
+> **Windows note (important)**
+> If you install a CUDA wheel, the CUDA build tag (e.g. `cu121`, `cu122`) must be compatible with your installed CUDA runtime/toolkit.
+
+A mismatch can cause errors like **“cannot load ggml.dll” even though the file exists**.
+
+If you are unsure, **use a CPU wheel**.
+
+Install with force-reinstall (safer than manual uninstall):
+
+```
 C:\AI\ComfyUI\python_embeded\python.exe -m pip install --upgrade --force-reinstall C:\path\to\llama_cpp_python-*.whl
 ```
 
 Notes:
 
-- `pip` may print warnings about leftover temp folders like `~umpy` or `~-l` under `site-packages`. These are usually safe to ignore; you can delete them later when ComfyUI is closed.
+* Warnings about leftover folders like `~umpy` are usually safe to ignore while ComfyUI is closed.
+* Make sure ComfyUI is **fully stopped** before installing.
 
 ## 4) Verify vision handlers exist
 
@@ -93,4 +111,3 @@ If you don’t use packages that depend on an older Pillow, you can ignore Pillo
 ```bat
 C:\AI\ComfyUI\python_embeded\python.exe -m pip install --upgrade "pillow<12"
 ```
-
