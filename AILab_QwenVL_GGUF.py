@@ -112,15 +112,15 @@ def _model_name_to_filename_candidates(model_name: str) -> set[str]:
 
 def _load_gguf_vl_catalog():
     if not GGUF_CONFIG_PATH.exists():
-        return {"base_dir": "llm/GGUF", "models": {}}
+        return {"base_dir": "LLM/GGUF", "models": {}}
     try:
         with open(GGUF_CONFIG_PATH, "r", encoding="utf-8") as fh:
             data = json.load(fh) or {}
     except Exception as exc:
         print(f"[QwenVL] gguf_models.json load failed: {exc}")
-        return {"base_dir": "llm/GGUF", "models": {}}
+        return {"base_dir": "LLM/GGUF", "models": {}}
 
-    base_dir = data.get("base_dir") or "llm/GGUF"
+    base_dir = data.get("base_dir") or "LLM/GGUF"
 
     flattened: dict[str, dict] = {}
 
