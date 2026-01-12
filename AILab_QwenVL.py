@@ -37,7 +37,6 @@ HF_ALL_MODELS: dict[str, dict] = {}
 SYSTEM_PROMPTS = {}
 PRESET_PROMPTS: list[str] = ["Describe this image in detail."]
 
-
 TOOLTIPS = {
     "model_name": "Pick the Qwen-VL checkpoint. First run downloads weights into models/LLM/Qwen-VL, so leave disk space.",
     "quantization": "Precision vs VRAM. FP16 gives the best quality if memory allows; 8-bit suits 8–16 GB GPUs; 4-bit fits 6 GB or lower but is slower.",
@@ -56,7 +55,6 @@ TOOLTIPS = {
     "frame_count": "Number of frames extracted from video inputs before prompting Qwen-VL. More frames provide context but cost time.",
 }
 
-
 class Quantization(str, Enum):
     Q4 = "4-bit (VRAM-friendly)"
     Q8 = "8-bit (Balanced)"
@@ -73,9 +71,7 @@ class Quantization(str, Enum):
                 return item
         raise ValueError(f"Unsupported quantization: {value}")
 
-
 ATTENTION_MODES = ["auto", "flash_attention_2", "sdpa"]
-
 
 def load_model_configs():
     global HF_VL_MODELS, HF_TEXT_MODELS, HF_ALL_MODELS, SYSTEM_PROMPTS, PRESET_PROMPTS
@@ -131,10 +127,8 @@ def load_model_configs():
     HF_ALL_MODELS = dict(HF_VL_MODELS)
     HF_ALL_MODELS.update(HF_TEXT_MODELS)
 
-
 if not HF_ALL_MODELS:
     load_model_configs()
-
 
 def get_device_info():
     gpu = {"available": False, "total_memory": 0, "free_memory": 0}
@@ -164,7 +158,6 @@ def get_device_info():
         "device_type": device_type,
         "recommended_device": recommended,
     }
-
 
 def normalize_device_choice(device: str) -> str:
     device = (device or "auto").strip()
@@ -203,10 +196,9 @@ def normalize_device_choice(device: str) -> str:
 
     return device
 
-
 def flash_attn_available():
-    if platform.system() != "Linux":
-        return False
+    #if platform.system() != "Linux":
+    #    return False
     if not torch.cuda.is_available():
         return False
 
@@ -226,7 +218,6 @@ def flash_attn_available():
         return False
 
     return True
-
 
 def resolve_attention_mode(mode):
     if mode == "sdpa":
@@ -297,7 +288,6 @@ def enforce_memory(model_name, quantization, device_info):
         raise RuntimeError("Insufficient memory for 4-bit mode")
     return quantization
 
-
 def quantization_config(model_name, quantization):
     info = HF_ALL_MODELS.get(model_name, {})
     if info.get("quantized"):
@@ -343,6 +333,8 @@ class QwenVLBase:
     ):
         quant = enforce_memory(model_name, Quantization.from_value(quant_value), self.device_info)
         attn_impl = resolve_attention_mode(attention_mode)
+        print(f"[QwenVL] Attention backend selected: {attn_impl}")
+        
         device_requested = self.device_info["recommended_device"] if device_choice == "auto" else device_choice
         device = normalize_device_choice(device_requested)
         signature = (model_name, quant.value, attn_impl, device, use_compile)
@@ -468,7 +460,6 @@ class QwenVLBase:
             if not keep_model_loaded:
                 self.clear()
 
-
 class AILab_QwenVL(QwenVLBase):
     @classmethod
     def INPUT_TYPES(cls):
@@ -501,7 +492,6 @@ class AILab_QwenVL(QwenVLBase):
 
     def process(self, model_name, quantization, preset_prompt, custom_prompt, attention_mode, max_tokens, keep_model_loaded, seed, image=None, video=None):
         return self.run(model_name, quantization, preset_prompt, custom_prompt, image, video, 16, max_tokens, 0.6, 0.9, 1, 1.2, seed, keep_model_loaded, attention_mode, False, "auto")
-
 
 class AILab_QwenVL_Advanced(QwenVLBase):
     @classmethod
@@ -547,7 +537,6 @@ class AILab_QwenVL_Advanced(QwenVLBase):
 
     def process(self, model_name, quantization, attention_mode, use_torch_compile, device, preset_prompt, custom_prompt, max_tokens, temperature, top_p, num_beams, repetition_penalty, frame_count, keep_model_loaded, seed, image=None, video=None):
         return self.run(model_name, quantization, preset_prompt, custom_prompt, image, video, frame_count, max_tokens, temperature, top_p, num_beams, repetition_penalty, seed, keep_model_loaded, attention_mode, use_torch_compile, device)
-
 
 NODE_CLASS_MAPPINGS = {
     "AILab_QwenVL": AILab_QwenVL,
