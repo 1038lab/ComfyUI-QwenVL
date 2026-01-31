@@ -24,7 +24,7 @@ import psutil
 import torch
 from PIL import Image
 from huggingface_hub import snapshot_download
-from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer, BitsAndBytesConfig
+from transformers import AutoModelForImageTextToText, AutoProcessor, AutoTokenizer, BitsAndBytesConfig
 
 import folder_paths
 
@@ -352,7 +352,7 @@ class QwenVLBase:
         if quant_config:
             load_kwargs["quantization_config"] = quant_config
         print(f"[QwenVL] Loading {model_name} ({quant.value}, attn={attn_impl})")
-        self.model = AutoModelForVision2Seq.from_pretrained(model_path, **load_kwargs).eval()
+        self.model = AutoModelForImageTextToText.from_pretrained(model_path, **load_kwargs).eval()
         self.model.config.use_cache = True
         if hasattr(self.model, "generation_config"):
             self.model.generation_config.use_cache = True
