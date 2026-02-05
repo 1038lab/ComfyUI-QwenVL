@@ -15,6 +15,7 @@
 
 import gc
 import json
+import os
 import platform
 from enum import Enum
 from pathlib import Path
