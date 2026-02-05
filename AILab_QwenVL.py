@@ -658,31 +658,21 @@ class QwenVLBase:
                 # This handles both single-file and sharded checkpoints correctly
                 print(f"[QwenVL] Loading weights from {model_path}")
                 try:
-                    # Use from_pretrained's built-in loading which handles sharded checkpoints
-                    # We already have the model structure, now we need to load the weights
-                    from transformers.modeling_utils import load_sharded_checkpoint, load_state_dict
-                    import json
+                    # Use HuggingFace's official sharded checkpoint loading
+                    from transformers.modeling_utils import load_sharded_checkpoint
+                    
+                    print(f"[QwenVL] Loading weights from {model_path}")
                     
                     # Check if this is a sharded checkpoint
                     index_file = os.path.join(model_path, "model.safetensors.index.json")
                     if os.path.exists(index_file):
-                        # Sharded checkpoint - load all shards
-                        print("[QwenVL] Detected sharded checkpoint, loading all shards...")
-                        with open(index_file, 'r') as f:
-                            index = json.load(f)
-                        
-                        # Load each shard
-                        shard_files = set(index["weight_map"].values())
-                        for shard_file in sorted(shard_files):
-                            shard_path = os.path.join(model_path, shard_file)
-                            print(f"[QwenVL] Loading shard: {shard_file}")
-                            state_dict = load_state_dict(shard_path)
-                            missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
-                            if missing_keys:
-                                print(f"[QwenVL] Warning: Missing keys in {shard_file}: {missing_keys}")
+                        # Sharded checkpoint - use HF's official loading function
+                        print("[QwenVL] Detected sharded checkpoint, using HF load_sharded_checkpoint...")
+                        load_sharded_checkpoint(self.model, model_path, strict=True)
                         print("[QwenVL] All shards loaded successfully")
                     else:
-                        # Single-file checkpoint
+                        # Single-file checkpoint - use HF's standard loading
+                        from transformers.modeling_utils import load_state_dict
                         from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
                         
                         if os.path.exists(os.path.join(model_path, SAFE_WEIGHTS_NAME)):
