@@ -27,6 +27,18 @@ from huggingface_hub import snapshot_download
 from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer, BitsAndBytesConfig
 
 import folder_paths
+from comfy.utils import ProgressBar
+
+# SageAttention support
+try:
+    from sageattention.core import (
+        sageattn_qk_int8_pv_fp16_cuda,
+        sageattn_qk_int8_pv_fp8_cuda,
+        sageattn_qk_int8_pv_fp8_cuda_sm90,
+    )
+    SAGE_ATTENTION_AVAILABLE = True
+except ImportError:
+    SAGE_ATTENTION_AVAILABLE = False
 
 NODE_DIR = Path(__file__).parent
 CONFIG_PATH = NODE_DIR / "hf_models.json"
@@ -71,7 +83,7 @@ class Quantization(str, Enum):
                 return item
         raise ValueError(f"Unsupported quantization: {value}")
 
-ATTENTION_MODES = ["auto", "flash_attention_2", "sdpa"]
+ATTENTION_MODES = ["auto", "sage", "flash_attention_2", "sdpa"]
 
 def load_model_configs():
     global HF_VL_MODELS, HF_TEXT_MODELS, HF_ALL_MODELS, SYSTEM_PROMPTS, PRESET_PROMPTS
@@ -219,18 +231,220 @@ def flash_attn_available():
 
     return True
 
-def resolve_attention_mode(mode):
+
+def sage_attn_available():
+    """Check if SageAttention is available and GPU supports it."""
+    if not SAGE_ATTENTION_AVAILABLE:
+        return False
+    if not torch.cuda.is_available():
+        return False
+    major, _ = torch.cuda.get_device_capability()
+    if major < 8:
+        return False
+    return True
+
+
+def get_sage_attention_config():
+    """Get the appropriate SageAttention kernel based on GPU architecture."""
+    if not sage_attn_available():
+        return None, None, None
+
+    major, minor = torch.cuda.get_device_capability()
+    arch_code = major * 10 + minor
+
+    attn_func = None
+    pv_accum_dtype = "fp32"
+
+    if arch_code >= 120:  # Blackwell
+        pv_accum_dtype = "fp32+fp32"
+        attn_func = sageattn_qk_int8_pv_fp8_cuda
+        print(f"[QwenVL] SageAttention: Using SM120 (Blackwell) FP8 kernel")
+    elif arch_code >= 90:  # Hopper
+        pv_accum_dtype = "fp32+fp32"
+        attn_func = sageattn_qk_int8_pv_fp8_cuda_sm90
+        print(f"[QwenVL] SageAttention: Using SM90 (Hopper) FP8 kernel")
+    elif arch_code == 89:  # Ada Lovelace
+        pv_accum_dtype = "fp32+fp32"
+        attn_func = sageattn_qk_int8_pv_fp8_cuda
+        print(f"[QwenVL] SageAttention: Using SM89 (Ada) FP8 kernel")
+    elif arch_code >= 80:  # Ampere
+        pv_accum_dtype = "fp32"
+        attn_func = sageattn_qk_int8_pv_fp16_cuda
+        print(f"[QwenVL] SageAttention: Using SM80+ (Ampere) FP16 kernel")
+    else:
+        print(f"[QwenVL] SageAttention not supported on SM{arch_code}")
+        return None, None, None
+
+    return attn_func, "per_warp", pv_accum_dtype
+
+def resolve_attention_mode(mode, force_sdpa=False):
+    """Resolve attention mode with fallback logic.
+    
+    Args:
+        mode: The requested attention mode
+        force_sdpa: If True, always return SDPA (for FP8/BnB models)
+    """
+    if force_sdpa:
+        return "sdpa"
+    
     if mode == "sdpa":
+        return "sdpa"
+    if mode == "sage":
+        if sage_attn_available():
+            return "sage"
+        print("[QwenVL] SageAttention forced but unavailable, falling back to SDPA")
         return "sdpa"
     if mode == "flash_attention_2":
         if flash_attn_available():
             return "flash_attention_2"
         print("[QwenVL] Flash-Attn forced but unavailable, falling back to SDPA")
         return "sdpa"
+    
+    # Auto mode: try sage → flash → sdpa
+    if sage_attn_available():
+        print("[QwenVL] Auto mode: Using SageAttention")
+        return "sage"
     if flash_attn_available():
+        print("[QwenVL] Auto mode: Using Flash Attention 2")
         return "flash_attention_2"
-    print("[QwenVL] Flash-Attn auto mode: dependency not ready, using SDPA")
+    print("[QwenVL] Auto mode: Using SDPA")
     return "sdpa"
+
+
+def set_sage_attention(model):
+    """
+    Apply SageAttention patching to the model.
+    Patches Qwen2Attention and Qwen3VLTextAttention modules to use SageAttention kernels.
+    """
+    if not sage_attn_available():
+        raise ImportError("SageAttention library is not installed or GPU doesn't support it.")
+
+    SAGE_ATTN_FUNC, QK_QUANT_GRAN, PV_ACCUM_DTYPE = get_sage_attention_config()
+    if SAGE_ATTN_FUNC is None:
+        raise RuntimeError("No compatible SageAttention kernel found for this GPU.")
+
+    # Try to import different attention classes for different Qwen models
+    attention_classes = []
+    
+    # Qwen2 models
+    try:
+        from transformers.models.qwen2.modeling_qwen2 import Qwen2Attention, apply_rotary_pos_emb as qwen2_apply_rotary
+        attention_classes.append((Qwen2Attention, qwen2_apply_rotary))
+    except ImportError:
+        pass
+    
+    # Qwen3 models (Qwen3-VL, etc.)
+    try:
+        from transformers.models.qwen3.modeling_qwen3 import Qwen3Attention, apply_rotary_pos_emb as qwen3_apply_rotary
+        attention_classes.append((Qwen3Attention, qwen3_apply_rotary))
+    except ImportError:
+        pass
+    
+    # Qwen3-VL specific
+    try:
+        from transformers.models.qwen3_vl.modeling_qwen3_vl import Qwen3VLTextAttention, apply_rotary_pos_emb as qwen3vl_apply_rotary
+        attention_classes.append((Qwen3VLTextAttention, qwen3vl_apply_rotary))
+    except ImportError:
+        pass
+    
+    if not attention_classes:
+        print("[QwenVL] Could not import any attention classes for SageAttention patching")
+        return
+
+    def make_sage_forward(AttentionClass, apply_rotary_pos_emb_func):
+        def sage_attention_forward(
+            self,
+            hidden_states: torch.Tensor,
+            position_embeddings: tuple = None,
+            attention_mask: torch.Tensor = None,
+            past_key_values=None,
+            cache_position: torch.LongTensor = None,
+            position_ids: torch.LongTensor = None,
+            **kwargs,
+        ):
+            original_dtype = hidden_states.dtype
+
+            # Determine target dtype
+            is_4bit = hasattr(self.q_proj, 'quant_state')
+            if is_4bit:
+                target_dtype = torch.bfloat16
+            else:
+                target_dtype = self.q_proj.weight.dtype
+
+            if hidden_states.dtype != target_dtype:
+                hidden_states = hidden_states.to(target_dtype)
+
+            input_shape = hidden_states.shape[:-1]
+            hidden_shape = (*input_shape, -1, self.head_dim)
+            bsz, q_len = input_shape[0], input_shape[1] if len(input_shape) > 1 else hidden_states.size(1)
+
+            # Handle q_norm and k_norm for Qwen3-VL
+            query_states = self.q_proj(hidden_states)
+            key_states = self.k_proj(hidden_states)
+            value_states = self.v_proj(hidden_states)
+
+            # Apply normalization if available (Qwen3-VL specific)
+            if hasattr(self, 'q_norm'):
+                query_states = self.q_norm(query_states.view(hidden_shape)).transpose(1, 2)
+            else:
+                query_states = query_states.view(hidden_shape).transpose(1, 2)
+            
+            if hasattr(self, 'k_norm'):
+                key_states = self.k_norm(key_states.view(hidden_shape)).transpose(1, 2)
+            else:
+                key_states = key_states.view(hidden_shape).transpose(1, 2)
+            
+            value_states = value_states.view(hidden_shape).transpose(1, 2)
+
+            # Apply rotary embeddings
+            if position_embeddings is not None:
+                cos, sin = position_embeddings
+                query_states, key_states = apply_rotary_pos_emb_func(query_states, key_states, cos, sin)
+
+            if past_key_values is not None:
+                cache_kwargs = {"sin": sin if position_embeddings else None, "cos": sin if position_embeddings else None, "cache_position": cache_position}
+                key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
+
+            is_causal = attention_mask is None and q_len > 1
+
+            attn_output = SAGE_ATTN_FUNC(
+                query_states.to(target_dtype),
+                key_states.to(target_dtype),
+                value_states.to(target_dtype),
+                tensor_layout="HND",
+                is_causal=is_causal,
+                qk_quant_gran=QK_QUANT_GRAN,
+                pv_accum_dtype=PV_ACCUM_DTYPE,
+            )
+
+            if isinstance(attn_output, tuple):
+                attn_output = attn_output[0]
+
+            attn_output = attn_output.transpose(1, 2).contiguous()
+            attn_output = attn_output.reshape(*input_shape, -1)
+
+            attn_output = self.o_proj(attn_output)
+
+            if attn_output.dtype != original_dtype:
+                attn_output = attn_output.to(original_dtype)
+
+            return attn_output, None
+        
+        return sage_attention_forward
+
+    # Apply patching to all supported attention modules
+    patched_count = 0
+    for AttentionClass, apply_rotary_func in attention_classes:
+        sage_forward = make_sage_forward(AttentionClass, apply_rotary_func)
+        for module in model.modules():
+            if isinstance(module, AttentionClass):
+                module.forward = sage_forward.__get__(module, AttentionClass)
+                patched_count += 1
+
+    if patched_count > 0:
+        print(f"[QwenVL] SageAttention: Patched {patched_count} attention layers")
+    else:
+        print("[QwenVL] SageAttention: No compatible attention layers found to patch")
 
 def ensure_model(model_name):
     info = HF_ALL_MODELS.get(model_name)
@@ -288,10 +502,23 @@ def enforce_memory(model_name, quantization, device_info):
         raise RuntimeError("Insufficient memory for 4-bit mode")
     return quantization
 
+def is_fp8_model(model_name: str) -> bool:
+    """Check if model name indicates it's a pre-quantized FP8 model."""
+    fp8_indicators = ["-fp8", "_fp8", "-FP8", "_FP8"]
+    return any(indicator in model_name for indicator in fp8_indicators)
+
+
 def quantization_config(model_name, quantization):
+    """Returns (quant_config, dtype, is_prequantized_fp8).
+    
+    For pre-quantized FP8 models, we need special handling:
+    - Don't use device_map (load directly to device)
+    - Don't use flash_attention_2 (only supports fp16/bf16)
+    """
     info = HF_ALL_MODELS.get(model_name, {})
-    if info.get("quantized"):
-        return None, None
+    if info.get("quantized") or is_fp8_model(model_name):
+        # Pre-quantized model (FP8, etc.)
+        return None, None, True
     if quantization == Quantization.Q4:
         cfg = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -299,10 +526,10 @@ def quantization_config(model_name, quantization):
             bnb_4bit_quant_type="nf4",
             bnb_4bit_use_double_quant=True,
         )
-        return cfg, None
+        return cfg, None, False
     if quantization == Quantization.Q8:
-        return BitsAndBytesConfig(load_in_8bit=True), None
-    return None, torch.float16 if torch.cuda.is_available() else torch.float32
+        return BitsAndBytesConfig(load_in_8bit=True), None, False
+    return None, torch.float16 if torch.cuda.is_available() else torch.float32, False
 
 class QwenVLBase:
     def __init__(self):
@@ -314,13 +541,25 @@ class QwenVLBase:
         print(f"[QwenVL] Node on {self.device_info['device_type']}")
 
     def clear(self):
-        self.model = None
+        """Clear model from memory and free VRAM."""
+        if self.model is not None:
+            # Move model to CPU first to free GPU memory
+            try:
+                self.model = self.model.cpu()
+            except:
+                pass
+            self.model = None
         self.processor = None
         self.tokenizer = None
         self.current_signature = None
+        
+        # Force garbage collection
         gc.collect()
+        
+        # Clear CUDA cache
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+            torch.cuda.synchronize()
 
     def load_model(
         self,
@@ -332,27 +571,155 @@ class QwenVLBase:
         keep_model_loaded,
     ):
         quant = enforce_memory(model_name, Quantization.from_value(quant_value), self.device_info)
-        attn_impl = resolve_attention_mode(attention_mode)
+        
+        # Check if BitsAndBytes quantization is being used
+        is_bnb_quantization = quant in [Quantization.Q4, Quantization.Q8]
+        
+        # Check if this is a pre-quantized FP8 model
+        is_prequantized_fp8 = is_fp8_model(model_name) or HF_ALL_MODELS.get(model_name, {}).get("quantized", False)
+        
+        # Determine if we need to force SDPA (for FP8 or BitsAndBytes models)
+        force_sdpa = is_prequantized_fp8 or is_bnb_quantization
+        
+        # Resolve attention mode with force_sdpa flag
+        attn_impl = resolve_attention_mode(attention_mode, force_sdpa=force_sdpa)
+        
+        # Additional info messages for forced SDPA
+        if force_sdpa and attention_mode in ["auto", "sage", "flash_attention_2"]:
+            if is_prequantized_fp8:
+                print("[QwenVL] FP8 model detected - forcing SDPA attention")
+            elif is_bnb_quantization:
+                print("[QwenVL] BitsAndBytes quantization detected - forcing SDPA attention")
+        
         print(f"[QwenVL] Attention backend selected: {attn_impl}")
         
         device_requested = self.device_info["recommended_device"] if device_choice == "auto" else device_choice
         device = normalize_device_choice(device_requested)
         signature = (model_name, quant.value, attn_impl, device, use_compile)
+        
+        # Check if we need to reload (model, quantization, or attention changed)
         if keep_model_loaded and self.model is not None and self.current_signature == signature:
             return
+        
+        # Clear model and VRAM before loading new configuration
+        if self.model is not None:
+            print("[QwenVL] Clearing previous model from memory before loading new configuration...")
         self.clear()
         model_path = ensure_model(model_name)
-        quant_config, dtype = quantization_config(model_name, quant)
+        quant_config, dtype, _ = quantization_config(model_name, quant)
+        
+        # Handle attention mode for loading
+        # SageAttention requires loading with SDPA first, then patching
+        actual_attn_impl = attn_impl
+        if attn_impl == "sage":
+            actual_attn_impl = "sdpa"
+        
+        # Build load kwargs
         load_kwargs = {
-            "device_map": device if device != "auto" else "auto",
-            "dtype": dtype,
-            "attn_implementation": attn_impl,
+            "attn_implementation": actual_attn_impl,
             "use_safetensors": True,
         }
-        if quant_config:
-            load_kwargs["quantization_config"] = quant_config
-        print(f"[QwenVL] Loading {model_name} ({quant.value}, attn={attn_impl})")
-        self.model = AutoModelForVision2Seq.from_pretrained(model_path, **load_kwargs).eval()
+        
+        if is_prequantized_fp8:
+            # For pre-quantized FP8 models: load directly to device, don't use device_map
+            # This prevents meta tensor issues
+            
+            # Determine target device based on user choice and availability
+            if device == "auto":
+                # Auto-select best available device
+                if torch.cuda.is_available():
+                    target_device = "cuda:0"
+                elif getattr(torch.backends, "mps", None) and torch.backends.mps.is_available():
+                    target_device = "mps"
+                else:
+                    target_device = "cpu"
+            else:
+                # Use user-specified device
+                target_device = device
+            
+            # For FP8 models, we need to disable accelerate's device_map and load manually
+            # to avoid meta tensor issues
+            load_kwargs["device_map"] = None
+            load_kwargs["torch_dtype"] = "auto"  # Let transformers detect FP8 dtype from config
+            
+            print(f"[QwenVL] Loading FP8 model to {target_device}...")
+            
+            # Load model on CPU first (without device_map to avoid meta tensors)
+            self.model = AutoModelForVision2Seq.from_pretrained(model_path, **load_kwargs)
+            
+            # Check if model has meta tensors and materialize them
+            has_meta = any(param.device.type == "meta" for param in self.model.parameters())
+            if has_meta:
+                print("[QwenVL] Model has meta tensors, materializing...")
+                # Materialize meta tensors on CPU first
+                self.model = self.model.to_empty(device="cpu")
+                # Now load the state dict properly
+                import os
+                from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
+                from transformers.modeling_utils import load_state_dict
+                
+                # Find and load the checkpoint file
+                if os.path.exists(os.path.join(model_path, SAFE_WEIGHTS_NAME)):
+                    state_dict_path = os.path.join(model_path, SAFE_WEIGHTS_NAME)
+                elif os.path.exists(os.path.join(model_path, WEIGHTS_NAME)):
+                    state_dict_path = os.path.join(model_path, WEIGHTS_NAME)
+                else:
+                    # Try to find sharded weights
+                    import glob
+                    safetensor_files = glob.glob(os.path.join(model_path, "*.safetensors"))
+                    if safetensor_files:
+                        state_dict_path = safetensor_files[0]
+                    else:
+                        raise RuntimeError(f"Could not find model weights in {model_path}")
+                
+                print(f"[QwenVL] Loading weights from {state_dict_path}")
+                state_dict = load_state_dict(state_dict_path)
+                
+                # Load state dict into the model - use strict=True for FP8 models
+                # to ensure all scale factors are loaded
+                try:
+                    self.model.load_state_dict(state_dict, strict=True)
+                    print("[QwenVL] All weights loaded successfully")
+                except RuntimeError as e:
+                    # If strict loading fails, try non-strict and warn
+                    print(f"[QwenVL] Strict loading failed: {e}")
+                    print("[QwenVL] Attempting non-strict loading...")
+                    missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
+                    if missing_keys:
+                        print(f"[QwenVL] Warning: Missing keys: {missing_keys}")
+                    if unexpected_keys:
+                        print(f"[QwenVL] Info: Unexpected keys (not loaded): {unexpected_keys}")
+            
+            # Now move to target device
+            print(f"[QwenVL] Moving FP8 model to {target_device}")
+            self.model = self.model.to(target_device)
+            self.model.eval()
+            print(f"[QwenVL] FP8 model loaded on {target_device}")
+        else:
+            # For regular models: use device_map and dtype
+            load_kwargs["device_map"] = device if device != "auto" else "auto"
+            if dtype:
+                load_kwargs["dtype"] = dtype
+            
+            if quant_config:
+                load_kwargs["quantization_config"] = quant_config
+            
+            # Show appropriate attention info in loading message
+            if attn_impl == "sage":
+                print(f"[QwenVL] Loading {model_name} ({quant.value}, base=sdpa, will_patch=sage)")
+            else:
+                print(f"[QwenVL] Loading {model_name} ({quant.value}, attn={actual_attn_impl})")
+            
+            self.model = AutoModelForVision2Seq.from_pretrained(model_path, **load_kwargs).eval()
+        
+        # Apply SageAttention patching if selected
+        if attn_impl == "sage":
+            try:
+                set_sage_attention(self.model)
+                print("[QwenVL] SageAttention enabled")
+            except Exception as exc:
+                print(f"[QwenVL] SageAttention patching failed: {exc}")
+        
         self.model.config.use_cache = True
         if hasattr(self.model, "generation_config"):
             self.model.generation_config.use_cache = True
@@ -431,10 +798,16 @@ class QwenVLBase:
         return text.strip()
 
     def run(self, model_name, quantization, preset_prompt, custom_prompt, image, video, frame_count, max_tokens, temperature, top_p, num_beams, repetition_penalty, seed, keep_model_loaded, attention_mode, use_torch_compile, device):
+        # Create progress bar with 3 stages: setup, model loading, generation
+        pbar = ProgressBar(3)
+        
         torch.manual_seed(seed)
         prompt = SYSTEM_PROMPTS.get(preset_prompt, preset_prompt)
         if custom_prompt and custom_prompt.strip():
             prompt = custom_prompt.strip()
+        
+        pbar.update_absolute(1, 3, None)
+        
         self.load_model(
             model_name,
             quantization,
@@ -443,6 +816,9 @@ class QwenVLBase:
             device,
             keep_model_loaded,
         )
+        
+        pbar.update_absolute(2, 3, None)
+        
         try:
             text = self.generate(
                 prompt,
@@ -455,6 +831,9 @@ class QwenVLBase:
                 num_beams,
                 repetition_penalty,
             )
+            
+            pbar.update_absolute(3, 3, None)
+            
             return (text,)
         finally:
             if not keep_model_loaded:
