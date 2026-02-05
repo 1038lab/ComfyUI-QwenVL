@@ -402,7 +402,7 @@ def set_sage_attention(model):
                 query_states, key_states = apply_rotary_pos_emb_func(query_states, key_states, cos, sin)
 
             if past_key_values is not None:
-                cache_kwargs = {"sin": sin if position_embeddings else None, "cos": sin if position_embeddings else None, "cache_position": cache_position}
+                cache_kwargs = {"sin": sin if position_embeddings else None, "cos": cos if position_embeddings else None, "cache_position": cache_position}
                 key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
             is_causal = attention_mask is None and q_len > 1
@@ -653,42 +653,64 @@ class QwenVLBase:
                 print("[QwenVL] Model has meta tensors, materializing...")
                 # Materialize meta tensors on CPU first
                 self.model = self.model.to_empty(device="cpu")
-                # Now load the state dict properly
-                import os
-                from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
-                from transformers.modeling_utils import load_state_dict
-                
-                # Find and load the checkpoint file
-                if os.path.exists(os.path.join(model_path, SAFE_WEIGHTS_NAME)):
-                    state_dict_path = os.path.join(model_path, SAFE_WEIGHTS_NAME)
-                elif os.path.exists(os.path.join(model_path, WEIGHTS_NAME)):
-                    state_dict_path = os.path.join(model_path, WEIGHTS_NAME)
-                else:
-                    # Try to find sharded weights
-                    import glob
-                    safetensor_files = glob.glob(os.path.join(model_path, "*.safetensors"))
-                    if safetensor_files:
-                        state_dict_path = safetensor_files[0]
-                    else:
-                        raise RuntimeError(f"Could not find model weights in {model_path}")
-                
-                print(f"[QwenVL] Loading weights from {state_dict_path}")
-                state_dict = load_state_dict(state_dict_path)
-                
-                # Load state dict into the model - use strict=True for FP8 models
-                # to ensure all scale factors are loaded
+                # Now load the state dict properly using HuggingFace's built-in method
+                # This handles both single-file and sharded checkpoints correctly
+                print(f"[QwenVL] Loading weights from {model_path}")
                 try:
-                    self.model.load_state_dict(state_dict, strict=True)
-                    print("[QwenVL] All weights loaded successfully")
-                except RuntimeError as e:
-                    # If strict loading fails, try non-strict and warn
-                    print(f"[QwenVL] Strict loading failed: {e}")
-                    print("[QwenVL] Attempting non-strict loading...")
-                    missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
-                    if missing_keys:
-                        print(f"[QwenVL] Warning: Missing keys: {missing_keys}")
-                    if unexpected_keys:
-                        print(f"[QwenVL] Info: Unexpected keys (not loaded): {unexpected_keys}")
+                    # Use from_pretrained's built-in loading which handles sharded checkpoints
+                    # We already have the model structure, now we need to load the weights
+                    from transformers.modeling_utils import load_sharded_checkpoint, load_state_dict
+                    import json
+                    
+                    # Check if this is a sharded checkpoint
+                    index_file = os.path.join(model_path, "model.safetensors.index.json")
+                    if os.path.exists(index_file):
+                        # Sharded checkpoint - load all shards
+                        print("[QwenVL] Detected sharded checkpoint, loading all shards...")
+                        with open(index_file, 'r') as f:
+                            index = json.load(f)
+                        
+                        # Load each shard
+                        shard_files = set(index["weight_map"].values())
+                        for shard_file in sorted(shard_files):
+                            shard_path = os.path.join(model_path, shard_file)
+                            print(f"[QwenVL] Loading shard: {shard_file}")
+                            state_dict = load_state_dict(shard_path)
+                            missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
+                            if missing_keys:
+                                print(f"[QwenVL] Warning: Missing keys in {shard_file}: {missing_keys}")
+                        print("[QwenVL] All shards loaded successfully")
+                    else:
+                        # Single-file checkpoint
+                        from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
+                        
+                        if os.path.exists(os.path.join(model_path, SAFE_WEIGHTS_NAME)):
+                            state_dict_path = os.path.join(model_path, SAFE_WEIGHTS_NAME)
+                        elif os.path.exists(os.path.join(model_path, WEIGHTS_NAME)):
+                            state_dict_path = os.path.join(model_path, WEIGHTS_NAME)
+                        else:
+                            raise RuntimeError(f"Could not find model weights in {model_path}")
+                        
+                        print(f"[QwenVL] Loading weights from {state_dict_path}")
+                        state_dict = load_state_dict(state_dict_path)
+                        
+                        # Load state dict into the model - use strict=True for FP8 models
+                        # to ensure all scale factors are loaded
+                        try:
+                            self.model.load_state_dict(state_dict, strict=True)
+                            print("[QwenVL] All weights loaded successfully")
+                        except RuntimeError as e:
+                            # If strict loading fails, try non-strict and warn
+                            print(f"[QwenVL] Strict loading failed: {e}")
+                            print("[QwenVL] Attempting non-strict loading...")
+                            missing_keys, unexpected_keys = self.model.load_state_dict(state_dict, strict=False)
+                            if missing_keys:
+                                print(f"[QwenVL] Warning: Missing keys: {missing_keys}")
+                            if unexpected_keys:
+                                print(f"[QwenVL] Info: Unexpected keys (not loaded): {unexpected_keys}")
+                except Exception as e:
+                    print(f"[QwenVL] Error loading weights: {e}")
+                    raise
             
             # Now move to target device
             print(f"[QwenVL] Moving FP8 model to {target_device}")
