@@ -1,4 +1,60 @@
 # ComfyUI-QwenVL Update Log
+
+---
+
+# Release Notes: v2.1.0 (2025-02-05)
+
+### 🚀 SageAttention Support
+
+Introducing **SageAttention** - A high-performance attention mechanism with GPU-optimized kernels for maximum inference speed.
+
+- **Per-GPU Architecture Optimization**: Automatically selects the best kernel for your GPU:
+  - **SM120 (Blackwell)**: FP8 kernels for RTX 50-series
+  - **SM90 (Hopper)**: Optimized FP8 kernels for H100
+  - **SM89 (Ada)**: FP8 kernels for RTX 40-series
+  - **SM80+ (Ampere)**: FP16 kernels for RTX 30-series and A100
+
+- **Smart Attention Selection**: The new "auto" mode now tries Sage → Flash → SDPA in order of performance
+- **Easy Installation**: Simply `pip install sageattention` to enable
+
+### 🎯 Improved FP8 Model Handling
+
+- **Automatic SDPA Fallback**: FP8 models now automatically use SDPA regardless of attention mode selection
+- **Better Memory Management**: Improved cache clearing when switching between FP8 and regular models
+- **Meta Tensor Fix**: Resolved "Cannot copy out of meta tensor" errors when loading FP8 models
+
+### 📊 Progress Bar
+
+Added ComfyUI-native progress bar for better visibility during:
+- Model loading stages
+- Generation progress
+- Clear visual feedback on current operation
+
+### 🧠 Intelligent Cache Management
+
+- **Automatic VRAM Clearing**: When changing attention modes, quantization, or model configurations
+- **Signature-Based Reloading**: Smart detection of configuration changes ensures proper model reloading
+- **Memory Optimization**: Better handling of model unloading to prevent VRAM leaks
+
+### ⚙️ Attention Mode Updates
+
+| Mode | Behavior |
+|------|----------|
+| **auto** | Tries Sage → Flash → SDPA (best performance) |
+| **sage** | Forces SageAttention (requires `pip install sageattention`) |
+| **flash_attention_2** | Forces Flash Attention 2 |
+| **sdpa** | PyTorch SDPA (default, always works) |
+
+**Note**: FP8 models and BitsAndBytes quantization automatically use SDPA.
+
+### 🔧 Technical Improvements
+
+- **Qwen3-VL Support**: SageAttention now properly patches Qwen3VLTextAttention layers
+- **Better Error Handling**: Clearer messages when attention modes fail to load
+- **Device Support**: Improved handling for CUDA, MPS, and CPU devices with FP8 models
+
+---
+
 # Release Notes: v2.0.0 (2025-12-22)
 
 ### New GGUF Nodes
