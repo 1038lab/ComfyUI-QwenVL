@@ -727,7 +727,7 @@ class QwenVLBase:
             else:
                 print(f"[QwenVL] Loading {model_name} ({quant.value}, attn={actual_attn_impl})")
             
-            self.model = AutoModelForImageTextToText.from_pretrained(model_path, **load_kwargs).eval()
+            self.model = AutoModelForVision2Seq.from_pretrained(model_path, **load_kwargs).eval()
         
         # Apply SageAttention patching if selected
         if attn_impl == "sage":
