@@ -25,7 +25,11 @@ import psutil
 import torch
 from PIL import Image
 from huggingface_hub import snapshot_download
-from transformers import AutoModelForVision2Seq, AutoProcessor, AutoTokenizer, BitsAndBytesConfig
+try:
+    from transformers import AutoModelForImageTextToText as AutoModelForVision2Seq
+except ImportError:
+    from transformers import AutoModelForVision2Seq
+from transformers import AutoProcessor, AutoTokenizer, BitsAndBytesConfig
 
 import folder_paths
 from comfy.utils import ProgressBar
@@ -723,7 +727,7 @@ class QwenVLBase:
             else:
                 print(f"[QwenVL] Loading {model_name} ({quant.value}, attn={actual_attn_impl})")
             
-            self.model = AutoModelForVision2Seq.from_pretrained(model_path, **load_kwargs).eval()
+            self.model = AutoModelForImageTextToText.from_pretrained(model_path, **load_kwargs).eval()
         
         # Apply SageAttention patching if selected
         if attn_impl == "sage":
