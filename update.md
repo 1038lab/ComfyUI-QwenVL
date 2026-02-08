@@ -1,6 +1,8 @@
 # ComfyUI-QwenVL Update Log
 
 ---
+# Release Notes: v2.1.1 (2025-02-08)
+- Fixed Transformers compatibility: works on both **Transformers 4.x** and **5.x** (thanks to **Sepolian** for identifying the issue and sharing the fix in [PR #130](https://github.com/1038lab/ComfyUI-QwenVL/pull/130); we adjusted the implementation to keep it compatible across both versions).
 
 # Release Notes: v2.1.0 (2025-02-05)
 
