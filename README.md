@@ -6,7 +6,8 @@ The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-
 
 ## **📰 News & Updates**
 * **2025/02/08**: **v2.1.1**  Fixed compatibility for  Transformers 4.x and 5.x [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-211-20250208)]
-* * **2025/02/05**: **v2.1.0** Added SageAttention support with per-GPU architecture optimization, improved FP8 model handling, and automatic attention mode selection. [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-210-20250205)]
+
+* **2025/02/05**: **v2.1.0** Added SageAttention support with per-GPU architecture optimization, improved FP8 model handling, and automatic attention mode selection. [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-210-20250205)]
   * **SageAttention Support**: New attention mode with per-GPU optimized kernels (SM80, SM89, SM90, SM120)
   * **Improved FP8 Handling**: Better support for pre-quantized FP8 models with automatic SDPA fallback
   * **Smart Attention Selection**: Auto mode now tries Sage → Flash → SDPA for optimal performance
