@@ -93,6 +93,7 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
                 "repetition_penalty": ("FLOAT", {"default": 1.1, "min": 0.5, "max": 2.0}),
                 "keep_model_loaded": ("BOOLEAN", {"default": True}),
                 "seed": ("INT", {"default": 1, "min": 1, "max": 2**32 - 1}),
+                "custom_model_repo": ("STRING", {"default": "", "tooltip": "Override model selection with a direct HuggingFace repo ID (e.g. Qwen/Qwen3-4B). Leave empty to use the dropdown above. Custom repos are loaded as vision-language models; for text-only custom models, add them to custom_models.json."}),
             }
         }
 
@@ -112,16 +113,18 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
         repetition_penalty,
         keep_model_loaded,
         seed,
+        custom_model_repo="",
     ):
+        effective_model = custom_model_repo.strip() if custom_model_repo and custom_model_repo.strip() else model_name
         base_instruction = custom_system_prompt.strip() or self.STYLES.get(
             enhancement_style,
             next(iter(self.STYLES.values()), ""),
         )
         user_prompt = prompt_text.strip() or "Describe a scene vividly."
         merged_prompt = f"{base_instruction}\n\n{user_prompt}".strip()
-        if model_name in HF_TEXT_MODELS:
+        if not custom_model_repo.strip() and model_name in HF_TEXT_MODELS:
             enhanced = self._invoke_text(
-                model_name,
+                effective_model,
                 quantization,
                 device,
                 merged_prompt,
@@ -134,7 +137,7 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
             )
         else:
             enhanced = self._invoke_qwen(
-                model_name,
+                effective_model,
                 quantization,
                 attention_mode,
                 use_torch_compile,
@@ -189,7 +192,10 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
         info = HF_TEXT_MODELS.get(model_name, {})
         repo_id = info.get("repo_id")
         if not repo_id:
-            raise ValueError(f"[QwenVL] Missing repo_id for text model: {model_name}")
+            if "/" in model_name and len(model_name.split("/")) == 2:
+                repo_id = model_name
+            else:
+                raise ValueError(f"[QwenVL] Missing repo_id for text model: {model_name}")
 
         if device_choice == "auto":
             device = "cuda" if torch.cuda.is_available() else ("mps" if getattr(torch.backends, "mps", None) and torch.backends.mps.is_available() else "cpu")

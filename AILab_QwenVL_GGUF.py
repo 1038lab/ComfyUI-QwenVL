@@ -333,47 +333,82 @@ class QwenVLGGUFBase:
         image_max_tokens: int | None,
         top_k: int | None,
         pool_size: int | None,
+        custom_repo_id: str = "",
+        custom_model_file: str = "",
+        custom_mmproj_file: str = "",
     ):
         self._load_backend()
 
-        resolved = _resolve_model_entry(model_name)
         base_dir = _resolve_base_dir(GGUF_VL_CATALOG.get("base_dir") or "llm/GGUF")
 
-        author_dir = _safe_dirname(resolved.author or "")
-        repo_dir = _safe_dirname(resolved.repo_dirname)
-        target_dir = base_dir / author_dir / repo_dir
+        if custom_repo_id and custom_model_file:
+            # Custom GGUF model: bypass catalog
+            parts = custom_repo_id.split("/")
+            author = _safe_dirname(parts[0]) if len(parts) >= 2 else "custom"
+            repo_name = _safe_dirname(parts[-1])
+            target_dir = base_dir / author / repo_name
 
-        model_path = target_dir / Path(resolved.model_filename).name
-        mmproj_path = target_dir / Path(resolved.mmproj_filename).name if resolved.mmproj_filename else None
+            model_path = target_dir / Path(custom_model_file).name
+            mmproj_path = target_dir / Path(custom_mmproj_file).name if custom_mmproj_file else None
 
-        repo_ids: list[str] = []
-        if resolved.repo_id:
-            repo_ids.append(resolved.repo_id)
-        repo_ids.extend(resolved.alt_repo_ids)
+            if not model_path.exists():
+                _download_single_file([custom_repo_id], custom_model_file, model_path)
+            if mmproj_path is not None and not mmproj_path.exists():
+                _download_single_file([custom_repo_id], custom_mmproj_file, mmproj_path)
 
-        if not model_path.exists():
-            if not repo_ids:
-                raise FileNotFoundError(f"[QwenVL] GGUF model not found locally and no repo_id provided: {model_path}")
-            _download_single_file(repo_ids, resolved.model_filename, model_path)
+            default_ctx = 8192
+            default_batch = 512
+            default_gpu_layers = -1
+            default_img_max = 4096
+            default_top_k = 0
+            default_pool_size = 4194304
 
-        if mmproj_path is not None and not mmproj_path.exists():
-            if not repo_ids:
-                raise FileNotFoundError(f"[QwenVL] mmproj not found locally and no repo_id provided: {mmproj_path}")
-            _download_single_file(repo_ids, resolved.mmproj_filename, mmproj_path)
+            print(f"[QwenVL] Using custom GGUF model from {custom_repo_id}")
+        else:
+            resolved = _resolve_model_entry(model_name)
+
+            author_dir = _safe_dirname(resolved.author or "")
+            repo_dir = _safe_dirname(resolved.repo_dirname)
+            target_dir = base_dir / author_dir / repo_dir
+
+            model_path = target_dir / Path(resolved.model_filename).name
+            mmproj_path = target_dir / Path(resolved.mmproj_filename).name if resolved.mmproj_filename else None
+
+            repo_ids: list[str] = []
+            if resolved.repo_id:
+                repo_ids.append(resolved.repo_id)
+            repo_ids.extend(resolved.alt_repo_ids)
+
+            if not model_path.exists():
+                if not repo_ids:
+                    raise FileNotFoundError(f"[QwenVL] GGUF model not found locally and no repo_id provided: {model_path}")
+                _download_single_file(repo_ids, resolved.model_filename, model_path)
+
+            if mmproj_path is not None and not mmproj_path.exists():
+                if not repo_ids:
+                    raise FileNotFoundError(f"[QwenVL] mmproj not found locally and no repo_id provided: {mmproj_path}")
+                _download_single_file(repo_ids, resolved.mmproj_filename, mmproj_path)
+
+            default_ctx = resolved.context_length
+            default_batch = resolved.n_batch
+            default_gpu_layers = resolved.gpu_layers
+            default_img_max = resolved.image_max_tokens
+            default_top_k = resolved.top_k
+            default_pool_size = resolved.pool_size
 
         device_kind = _pick_device(device)
 
-        n_ctx = int(ctx) if ctx is not None else resolved.context_length
-        n_batch_val = int(n_batch) if n_batch is not None else resolved.n_batch
-        top_k_val = int(top_k) if top_k is not None else resolved.top_k
-        pool_size_val = int(pool_size) if pool_size is not None else resolved.pool_size
+        n_ctx = int(ctx) if ctx is not None else default_ctx
+        n_batch_val = int(n_batch) if n_batch is not None else default_batch
+        top_k_val = int(top_k) if top_k is not None else default_top_k
+        pool_size_val = int(pool_size) if pool_size is not None else default_pool_size
 
         if device_kind == "cuda":
-            n_gpu_layers = int(gpu_layers) if gpu_layers is not None else resolved.gpu_layers
+            n_gpu_layers = int(gpu_layers) if gpu_layers is not None else default_gpu_layers
         else:
             n_gpu_layers = 0
 
-        img_max = int(image_max_tokens) if image_max_tokens is not None else resolved.image_max_tokens
+        img_max = int(image_max_tokens) if image_max_tokens is not None else default_img_max
 
         has_mmproj = mmproj_path is not None and mmproj_path.exists()
 
@@ -529,6 +564,9 @@ class QwenVLGGUFBase:
         image_max_tokens: int | None,
         top_k: int | None,
         pool_size: int | None,
+        custom_repo_id: str = "",
+        custom_model_file: str = "",
+        custom_mmproj_file: str = "",
     ):
         torch.manual_seed(int(seed))
 
@@ -557,6 +595,9 @@ class QwenVLGGUFBase:
                 image_max_tokens=image_max_tokens,
                 top_k=top_k,
                 pool_size=pool_size,
+                custom_repo_id=custom_repo_id,
+                custom_model_file=custom_model_file,
+                custom_mmproj_file=custom_mmproj_file,
             )
             if images_b64 and self.chat_handler is None:
                 print("[QwenVL] Warning: images provided but this model entry has no mmproj_file; images will be ignored")
@@ -598,6 +639,9 @@ class AILab_QwenVL_GGUF(QwenVLGGUFBase):
                 "max_tokens": ("INT", {"default": 512, "min": 64, "max": 2048}),
                 "keep_model_loaded": ("BOOLEAN", {"default": True}),
                 "seed": ("INT", {"default": 1, "min": 1, "max": 2**32 - 1}),
+                "custom_repo_id": ("STRING", {"default": "", "tooltip": "HuggingFace repo ID for a custom GGUF model (e.g. user/model-GGUF). Leave empty to use the dropdown above."}),
+                "custom_model_file": ("STRING", {"default": "", "tooltip": "Filename of the .gguf model file within the custom repo (e.g. model-Q4_K_M.gguf)."}),
+                "custom_mmproj_file": ("STRING", {"default": "", "tooltip": "Filename of the mmproj .gguf file for vision support (e.g. mmproj-model.gguf). Required for image/video input."}),
             },
             "optional": {
                 "image": ("IMAGE",),
@@ -618,6 +662,9 @@ class AILab_QwenVL_GGUF(QwenVLGGUFBase):
         max_tokens,
         keep_model_loaded,
         seed,
+        custom_repo_id="",
+        custom_model_file="",
+        custom_mmproj_file="",
         image=None,
         video=None,
     ):
@@ -641,6 +688,9 @@ class AILab_QwenVL_GGUF(QwenVLGGUFBase):
             image_max_tokens=None,
             top_k=None,
             pool_size=None,
+            custom_repo_id=custom_repo_id,
+            custom_model_file=custom_model_file,
+            custom_mmproj_file=custom_mmproj_file,
         )
 
 
@@ -678,6 +728,9 @@ class AILab_QwenVL_GGUF_Advanced(QwenVLGGUFBase):
                 "pool_size": ("INT", {"default": 4194304, "min": 1048576, "max": 10485760, "step": 524288}),
                 "keep_model_loaded": ("BOOLEAN", {"default": True}),
                 "seed": ("INT", {"default": 1, "min": 1, "max": 2**32 - 1}),
+                "custom_repo_id": ("STRING", {"default": "", "tooltip": "HuggingFace repo ID for a custom GGUF model (e.g. user/model-GGUF). Leave empty to use the dropdown above."}),
+                "custom_model_file": ("STRING", {"default": "", "tooltip": "Filename of the .gguf model file within the custom repo (e.g. model-Q4_K_M.gguf)."}),
+                "custom_mmproj_file": ("STRING", {"default": "", "tooltip": "Filename of the mmproj .gguf file for vision support (e.g. mmproj-model.gguf). Required for image/video input."}),
             },
             "optional": {
                 "image": ("IMAGE",),
@@ -709,6 +762,9 @@ class AILab_QwenVL_GGUF_Advanced(QwenVLGGUFBase):
         pool_size,
         keep_model_loaded,
         seed,
+        custom_repo_id="",
+        custom_model_file="",
+        custom_mmproj_file="",
         image=None,
         video=None,
     ):
@@ -732,6 +788,9 @@ class AILab_QwenVL_GGUF_Advanced(QwenVLGGUFBase):
             image_max_tokens=image_max_tokens,
             top_k=top_k,
             pool_size=pool_size,
+            custom_repo_id=custom_repo_id,
+            custom_model_file=custom_model_file,
+            custom_mmproj_file=custom_mmproj_file,
         )
 
 
