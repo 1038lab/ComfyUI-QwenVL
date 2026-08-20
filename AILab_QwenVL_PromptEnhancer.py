@@ -249,7 +249,19 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
         else:
             device_choice = device
 
-        inputs = self.text_tokenizer(prompt, return_tensors="pt").to(device_choice)
+        if getattr(self.text_tokenizer, "chat_template", None):
+            # Instruct models must be prompted through their chat template, otherwise
+            # they treat the prompt as a document to continue (echoing the instructions,
+            # drifting into unrelated text) instead of answering it.
+            encoded = self.text_tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                add_generation_prompt=True,
+                return_tensors="pt",
+                return_dict=True,
+            )
+            inputs = {k: v.to(device_choice) for k, v in encoded.items()}
+        else:
+            inputs = self.text_tokenizer(prompt, return_tensors="pt").to(device_choice)
         kwargs = {
             "max_new_tokens": max_tokens,
             "repetition_penalty": repetition_penalty,
@@ -260,9 +272,8 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
             "pad_token_id": self.text_tokenizer.eos_token_id,
         }
         outputs = self.text_model.generate(**inputs, **kwargs)
-        decoded = self.text_tokenizer.decode(outputs[0], skip_special_tokens=True)
-        prefix = self.text_tokenizer.decode(inputs["input_ids"][0], skip_special_tokens=True)
-        result = decoded[len(prefix) :].strip()
+        prompt_len = inputs["input_ids"].shape[1]
+        result = self.text_tokenizer.decode(outputs[0][prompt_len:], skip_special_tokens=True).strip()
 
         if not keep_model_loaded:
             self.text_model = None
