@@ -1,5 +1,18 @@
 # ComfyUI-QwenVL Update Log
 
+# Release Notes: v2.2.0 (2026-08-20)
+
+### 🌟 Qwen3.5, Qwen3.6 (MoE) & Qwen3.8 Native GGUF Support
+- **Expanded Model Catalog**: Added direct support for Qwen3.5-VL-7B, Qwen3.6-VL-MoE, and Qwen3.8-VL-14B within the GGUF nodes.
+- **Native Memory Management**: Implemented `comfy.model_management` to gracefully handle cache clearing (`soft_empty_cache` and `unload_all_models`) directly within the ComfyUI ecosystem, eliminating VRAM leaks when models are unloaded.
+- **Simplified Installation Guide**: Updated `llama-cpp-python` dependency to `>=0.3.40` which natively supports all new vision chat handlers and MoE offloading without complex version matrices. Added clear console warnings pointing users to `docs/LLAMA_CPP_PYTHON_VISION_INSTALL.md` if the vision bindings are missing.
+
+### 🛠️ Feature Additions & Bug Fixes
+- **VRAM Leak Fix (Issue #182)**: Fixed a critical issue where VRAM was not released after inference when `keep_model_loaded=False`. The GGUF nodes now explicitly call `self.llm.close()` to free the GGML C++ backend memory, and the Transformer nodes now properly clear `torch._dynamo` cache and force PyTorch garbage collection.
+- **New HuggingFace Downloader Node**: Added `AILab_HuggingFaceDownloader` to allow users to directly download GGUF/HF models or entire repositories from HuggingFace directly into ComfyUI's model directories.
+- **Prompt Enhancer Fix (PR #179)**: Fixed a critical bug in `AILab_QwenVL_PromptEnhancer` (Transformers) where instruct models (like Qwen3-4B) would ignore system instructions and act as text-continuations. The node now correctly applies the tokenizer's chat template (`apply_chat_template`).
+- **GGUF Prompt Enhancer Optimization**: Removed hardcoded `"chat_format": "qwen"` in `AILab_QwenVL_GGUF_PromptEnhancer.py`. The node now dynamically reads the native chat template embedded directly within the GGUF file (e.g., ChatML for Qwen3), ensuring perfect special-token formatting for newer architectures.
+
 ---
 # Release Notes: v2.1.1 (2026-02-08)
 - Fixed Transformers compatibility: works on both **Transformers 4.x** and **5.x** (thanks to **Sepolian** for identifying the issue and sharing the fix in [PR #130](https://github.com/1038lab/ComfyUI-QwenVL/pull/130); we adjusted the implementation to keep it compatible across both versions).
