@@ -167,6 +167,8 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
                 "english_output": ("BOOLEAN", {"default": False, "tooltip": "Force final output in English using translation prompt."}),
                 "device": (["auto", "cuda", "cpu", "mps"], {"default": "auto", "tooltip": "Select device; auto prefers GPU when available."}),
                 "seed": ("INT", {"default": 1, "min": 1, "max": 2**32 - 1}),
+                "custom_repo_id": ("STRING", {"default": "", "tooltip": "HuggingFace repo ID for a custom GGUF model (e.g. user/model-GGUF). Leave empty to use the dropdown above."}),
+                "custom_model_file": ("STRING", {"default": "", "tooltip": "Filename of the .gguf model file within the custom repo (e.g. model-Q4_K_M.gguf)."}),
             }
         }
 
@@ -262,11 +264,48 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         if not resolved.exists():
             raise FileNotFoundError(f"[QwenVL] GGUF model not found after download: {resolved} (tried: {', '.join(attempted)})")
 
-    def _load_model(self, model_name, device):
-        resolved = self._resolve_model_path(model_name)
-        self._maybe_download_model(model_name, resolved)
-        model_cfg = self.gguf_models["models"].get(model_name, {})
-        context_length = model_cfg.get("context_length", 8192)
+    def _load_model(self, model_name, device, custom_repo_id="", custom_model_file=""):
+        if custom_repo_id and custom_model_file:
+            # Custom GGUF model: bypass catalog
+            base_dir = _resolve_base_dir(self.gguf_models.get("base_dir") or "LLM/GGUF")
+            parts = custom_repo_id.split("/")
+            author = _safe_dirname(parts[0]) if len(parts) >= 2 else "custom"
+            repo_name = _safe_dirname(parts[-1])
+            target_dir = base_dir / author / repo_name
+
+            resolved = target_dir / Path(custom_model_file).name
+            if not resolved.exists():
+                resolved.parent.mkdir(parents=True, exist_ok=True)
+                # Download from HuggingFace
+                last_exc = None
+                for repo_id in [custom_repo_id]:
+                    print(f"[QwenVL] Downloading {custom_model_file} from {repo_id}")
+                    try:
+                        downloaded = hf_hub_download(
+                            repo_id=repo_id,
+                            filename=custom_model_file,
+                            repo_type="model",
+                            local_dir=str(target_dir),
+                            local_dir_use_symlinks=False,
+                        )
+                        downloaded_path = Path(downloaded)
+                        if downloaded_path.exists() and downloaded_path.resolve() != resolved.resolve():
+                            downloaded_path.replace(resolved)
+                        break
+                    except Exception as exc:
+                        last_exc = exc
+                        print(f"[QwenVL] Download failed from {repo_id}: {exc}")
+                if not resolved.exists():
+                    raise FileNotFoundError(f"[QwenVL] Custom GGUF model not found after download: {resolved} (error: {last_exc})")
+
+            context_length = 8192
+            print(f"[QwenVL] Using custom GGUF model from {custom_repo_id}")
+        else:
+            resolved = self._resolve_model_path(model_name)
+            self._maybe_download_model(model_name, resolved)
+            model_cfg = self.gguf_models["models"].get(model_name, {})
+            context_length = model_cfg.get("context_length", 8192)
+
         signature = (resolved, context_length, device)
         if self.llm is not None and self.current_signature == signature:
             return
@@ -368,6 +407,8 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         english_output,
         device,
         seed,
+        custom_repo_id="",
+        custom_model_file="",
     ):
         style_entry = self.styles.get(preset_system_prompt, {})
         system_prompt = (custom_system_prompt.strip() or style_entry.get("system_prompt") or "").strip()
@@ -380,7 +421,7 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         )
         user_prompt = prompt_text.strip() or "Describe a scene vividly."
         merged_prompt = user_prompt
-        self._load_model(model_name, device)
+        self._load_model(model_name, device, custom_repo_id=custom_repo_id, custom_model_file=custom_model_file)
         enhanced = self._invoke_llama(
             system_prompt=system_prompt,
             user_prompt=merged_prompt,
