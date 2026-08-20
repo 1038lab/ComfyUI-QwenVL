@@ -5,6 +5,7 @@ The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-
 ![QwenVL_V1.1.0](https://github.com/user-attachments/assets/13e89746-a04e-41a3-9026-7079b29e149c)
 
 ## **📰 News & Updates**
+* **2026/08/20**: **v2.2.0** Added native GGUF support for Qwen3.5, 3.6 (MoE), and 3.8. Implemented native `comfy.model_management` for memory clearing. [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#release-notes-v220-2026-08-19)]
 * **2026/02/08**: **v2.1.1**  Fixed compatibility for  Transformers 4.x and 5.x [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-211-20260208)]
 
 * **2026/02/05**: **v2.1.0** Added SageAttention support with per-GPU architecture optimization, improved FP8 model handling, and automatic attention mode selection. [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-210-20260205)]
@@ -80,6 +81,9 @@ pip install sageattention
 - **QwenVL (Advanced)**: Full control over sampling, device, and performance settings.  
 - **QwenVL Prompt Enhancer**: Text-only prompt enhancement (supports both Qwen3 text models and QwenVL models in text mode).  
 
+### **Utilities Nodes**
+- **HuggingFace Downloader**: Directly download GGUF/HF models or entire repositories from HuggingFace to your ComfyUI directories.
+
 ### **GGUF (llama.cpp) Nodes**
 - **QwenVL (GGUF)**: GGUF vision-language inference.  
 - **QwenVL (GGUF Advanced)**: Extended GGUF controls (context, GPU layers, etc.).  
@@ -143,6 +147,9 @@ The models will be automatically downloaded on first use. If you prefer to downl
 | Qwen-VL (GGUF) | Qwen3-VL-8B-Instruct-GGUF | [Qwen/Qwen3-VL-8B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen3-VL-8B-Instruct-GGUF) |  | Qwen3VL-8B-Instruct-F16.gguf, Qwen3VL-8B-Instruct-Q4_K_M.gguf, Qwen3VL-8B-Instruct-Q8_0.gguf | mmproj-Qwen3VL-8B-Instruct-F16.gguf |
 | Qwen-VL (GGUF) | Qwen3-VL-4B-Thinking-GGUF | [Qwen/Qwen3-VL-4B-Thinking-GGUF](https://huggingface.co/Qwen/Qwen3-VL-4B-Thinking-GGUF) |  | Qwen3VL-4B-Thinking-F16.gguf, Qwen3VL-4B-Thinking-Q4_K_M.gguf, Qwen3VL-4B-Thinking-Q8_0.gguf | mmproj-Qwen3VL-4B-Thinking-F16.gguf |
 | Qwen-VL (GGUF) | Qwen3-VL-8B-Thinking-GGUF | [Qwen/Qwen3-VL-8B-Thinking-GGUF](https://huggingface.co/Qwen/Qwen3-VL-8B-Thinking-GGUF) |  | Qwen3VL-8B-Thinking-F16.gguf, Qwen3VL-8B-Thinking-Q4_K_M.gguf, Qwen3VL-8B-Thinking-Q8_0.gguf | mmproj-Qwen3VL-8B-Thinking-F16.gguf |
+| Qwen-VL (GGUF) | Qwen3.5-VL-7B-Instruct-GGUF | [Qwen/Qwen3.5-VL-7B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen3.5-VL-7B-Instruct-GGUF) |  | Qwen3.5VL-7B-Instruct-F16.gguf, Qwen3.5VL-7B-Instruct-Q4_K_M.gguf, Qwen3.5VL-7B-Instruct-Q8_0.gguf | mmproj-Qwen3.5VL-7B-Instruct-F16.gguf |
+| Qwen-VL (GGUF) | Qwen3.6-VL-MoE-Instruct-GGUF | [Qwen/Qwen3.6-VL-MoE-Instruct-GGUF](https://huggingface.co/Qwen/Qwen3.6-VL-MoE-Instruct-GGUF) |  | Qwen3.6VL-MoE-Instruct-F16.gguf, Qwen3.6VL-MoE-Instruct-Q4_K_M.gguf, Qwen3.6VL-MoE-Instruct-Q8_0.gguf | mmproj-Qwen3.6VL-MoE-Instruct-F16.gguf |
+| Qwen-VL (GGUF) | Qwen3.8-VL-14B-Instruct-GGUF | [Qwen/Qwen3.8-VL-14B-Instruct-GGUF](https://huggingface.co/Qwen/Qwen3.8-VL-14B-Instruct-GGUF) |  | Qwen3.8VL-14B-Instruct-F16.gguf, Qwen3.8VL-14B-Instruct-Q4_K_M.gguf, Qwen3.8VL-14B-Instruct-Q8_0.gguf | mmproj-Qwen3.8VL-14B-Instruct-F16.gguf |
 
 ## **📖 Usage**
 
