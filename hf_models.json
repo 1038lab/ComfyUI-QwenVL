@@ -163,6 +163,36 @@
         "8bit": 8.5,
         "4bit": 5.0
       }
+    },
+    "unsloth/Qwen3.5-4B": {
+      "repo_id": "unsloth/Qwen3.5-4B",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 8.0,
+        "8bit": 4.5,
+        "4bit": 3.0
+      }
+    },
+    "unsloth/Qwen3.6-27B": {
+      "repo_id": "unsloth/Qwen3.6-27B",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 28.0,
+        "8bit": 14.0,
+        "4bit": 8.5
+      }
+    },
+    "unsloth/Qwen3.8-27B": {
+      "repo_id": "unsloth/Qwen3.8-27B",
+      "default": false,
+      "quantized": false,
+      "vram_requirement": {
+        "full": 28.0,
+        "8bit": 14.0,
+        "4bit": 8.5
+      }
     }
   },
   "hf_text_models": {
