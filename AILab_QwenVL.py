@@ -553,10 +553,25 @@ class QwenVLBase:
                 self.model = self.model.cpu()
             except:
                 pass
+            del self.model
             self.model = None
-        self.processor = None
-        self.tokenizer = None
+        
+        if self.processor is not None:
+            del self.processor
+            self.processor = None
+            
+        if self.tokenizer is not None:
+            del self.tokenizer
+            self.tokenizer = None
+            
         self.current_signature = None
+        
+        # Clear torch dynamo cache if compile was used
+        if hasattr(torch, "_dynamo") and hasattr(torch._dynamo, "reset"):
+            try:
+                torch._dynamo.reset()
+            except:
+                pass
         
         # Force garbage collection
         gc.collect()

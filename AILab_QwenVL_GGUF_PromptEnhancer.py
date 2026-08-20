@@ -171,7 +171,13 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         }
 
     def clear(self):
-        self.llm = None
+        if self.llm is not None:
+            if hasattr(self.llm, "close"):
+                try:
+                    self.llm.close()
+                except Exception:
+                    pass
+            self.llm = None
         self.current_signature = None
 
     def _resolve_model_path(self, model_name):

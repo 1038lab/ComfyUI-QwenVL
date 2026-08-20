@@ -276,9 +276,21 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
         result = self.text_tokenizer.decode(outputs[0][prompt_len:], skip_special_tokens=True).strip()
 
         if not keep_model_loaded:
-            self.text_model = None
-            self.text_tokenizer = None
+            if self.text_model is not None:
+                try:
+                    self.text_model = self.text_model.cpu()
+                except:
+                    pass
+                del self.text_model
+                self.text_model = None
+            
+            if self.text_tokenizer is not None:
+                del self.text_tokenizer
+                self.text_tokenizer = None
+                
             self.text_signature = None
+            import gc
+            gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
 

@@ -308,7 +308,13 @@ class QwenVLGGUFBase:
         self.current_signature = None
 
     def clear(self):
-        self.llm = None
+        if self.llm is not None:
+            if hasattr(self.llm, "close"):
+                try:
+                    self.llm.close()
+                except Exception:
+                    pass
+            self.llm = None
         self.chat_handler = None
         self.current_signature = None
         gc.collect()

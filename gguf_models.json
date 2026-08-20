@@ -132,6 +132,23 @@
         "top_k": 0,
         "pool_size": 4194304
       }
+    },
+    "Qwen3.8-27B-UD-GGUF": {
+      "author": "unsloth",
+      "repo_name": "Qwen3.8-27B-GGUF",
+      "repo_id": "unsloth/Qwen3.8-27B-GGUF",
+      "mmproj_file": "mmproj-BF16.gguf",
+      "model_files": [
+        "Qwen3.8-27B-UD-Q3_K_XL.gguf"
+      ],
+      "defaults": {
+        "context_length": 8192,
+        "image_max_tokens": 4096,
+        "n_batch": 512,
+        "gpu_layers": -1,
+        "top_k": 0,
+        "pool_size": 4194304
+      }
     }
   }
 }
