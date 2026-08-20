@@ -1,5 +1,5 @@
 {
-  "base_dir": "llm/GGUF",
+  "base_dir": "LLM/GGUF",
   "Qwen_model": {
     "Qwen3-4B-GGUF": {
       "author": "Qwen",
