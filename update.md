@@ -6,6 +6,7 @@
 - **Expanded Model Catalog**: Added direct support for Qwen3.5-VL-7B, Qwen3.6-VL-MoE, and Qwen3.8-VL-14B within the GGUF nodes.
 - **Native Memory Management**: Implemented `comfy.model_management` to gracefully handle cache clearing (`soft_empty_cache` and `unload_all_models`) directly within the ComfyUI ecosystem, eliminating VRAM leaks when models are unloaded.
 - **Simplified Installation Guide**: Updated `llama-cpp-python` dependency to `>=0.3.40` which natively supports all new vision chat handlers and MoE offloading without complex version matrices. Added clear console warnings pointing users to `docs/LLAMA_CPP_PYTHON_VISION_INSTALL.md` if the vision bindings are missing.
+<img alt="image" src="https://github.com/user-attachments/assets/b257ad2e-b639-4b55-ac00-07a11955c187" />
 
 ### 🛠️ Feature Additions & Bug Fixes
 - **VRAM Leak Fix (Issue #182)**: Fixed a critical issue where VRAM was not released after inference when `keep_model_loaded=False`. The GGUF nodes now explicitly call `self.llm.close()` to free the GGML C++ backend memory, and the Transformer nodes now properly clear `torch._dynamo` cache and force PyTorch garbage collection.
