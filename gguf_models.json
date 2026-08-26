@@ -1,5 +1,5 @@
 {
-  "base_dir": "llm/GGUF",
+  "base_dir": "LLM/GGUF",
   "Qwen_model": {
     "Qwen3-4B-GGUF": {
       "author": "Qwen",
@@ -24,27 +24,9 @@
         "mradermacher/Qwen3-4B-abliterated-GGUF"
       ],
       "model_files": [
-        "Qwen3-4B-abliterated-iq2_m.gguf",
-        "Qwen3-4B-abliterated-iq2_s.gguf",
-        "Qwen3-4B-abliterated-iq2_xs.gguf",
-        "Qwen3-4B-abliterated-iq2_xxs.gguf",
-        "Qwen3-4B-abliterated-iq3_m.gguf",
-        "Qwen3-4B-abliterated-iq3_s.gguf",
-        "Qwen3-4B-abliterated-iq3_xs.gguf",
-        "Qwen3-4B-abliterated-iq3_xxs.gguf",
-        "Qwen3-4B-abliterated-iq4_nl.gguf",
-        "Qwen3-4B-abliterated-iq4_xs.gguf",
-        "Qwen3-4B-abliterated-q2_k_s.gguf",
         "Qwen3-4B-abliterated-q3_k_m.gguf",
-        "Qwen3-4B-abliterated-q3_k_s.gguf",
-        "Qwen3-4B-abliterated-q4_0.gguf",
-        "Qwen3-4B-abliterated-q4_1.gguf",
         "Qwen3-4B-abliterated-q4_k_m.gguf",
-        "Qwen3-4B-abliterated-q4_k_s.gguf",
-        "Qwen3-4B-abliterated-q5_0.gguf",
-        "Qwen3-4B-abliterated-q5_1.gguf",
         "Qwen3-4B-abliterated-q5_k_m.gguf",
-        "Qwen3-4B-abliterated-q5_k_s.gguf",
         "Qwen3-4B-abliterated-q6_k_m.gguf",
         "Qwen3-4B-abliterated-q8_0.gguf",
         "Qwen3-4B-abliterated-bf16.gguf",
