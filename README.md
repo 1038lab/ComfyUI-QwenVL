@@ -1,11 +1,18 @@
 # **QwenVL for ComfyUI**
 
-The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-language models (LVLMs) from Alibaba Cloud, including the latest Qwen2.5-VL, Qwen3-VL, Qwen3.5-VL, Qwen3.6-VL (MoE), and Qwen3.8-VL, plus GGUF backends and text-only Qwen3 support. This advanced node enables seamless multimodal AI capabilities within your ComfyUI workflows, allowing for efficient text generation, image understanding, and video analysis.
+The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-language models (LVLMs) from Alibaba Cloud, including the latest Qwen3-VL and Qwen2.5-VL, plus GGUF backends and text-only Qwen3 support. This advanced node enables seamless multimodal AI capabilities within your ComfyUI workflows, allowing for efficient text generation, image understanding, and video analysis.
 
 ![QwenVL_V1.1.0](https://github.com/user-attachments/assets/13e89746-a04e-41a3-9026-7079b29e149c)
 
 ## **📰 News & Updates**
-* **2026/08/20**: **v2.2.0** Added native GGUF support for Qwen3.5, 3.6 (MoE), and 3.8. Implemented native `comfy.model_management` for memory clearing. [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#release-notes-v220-2026-08-19)]
+* **2026/08/26**: **v2.3.0** Intelligent Video Scaling & Custom Models Upgrade!
+  * **Intelligent Video Auto-Scaling & Token Budget Safeguard**: Solves context slot overflow (`failed to find a memory slot`) and CUDA OOM. Automatically computes safe per-frame token budget based on `ctx` and `frame_count`; preserves full native resolution for small video frames while gracefully downscaling high-res videos (1080p/4K). Added `video_frame_size` control to all Advanced nodes.
+  * **Unified Custom Models Architecture (`custom_models.json`)**: Simplified 2-section design (`hf_models` & `gguf_models`) with full support for custom GGUF and HF models across vision and text nodes.
+  * **Enhanced Model Downloader (`AILab_HuggingFaceDownloader`)**: Standalone workflow execution (`OUTPUT_NODE = True`), smart auto-routing (`save_folder: "auto"`), automated `mmproj` visual projector discovery/downloading, and color-coded status UI card.
+  * **Modular Inference Engine (`qwenvl_engine.py` & `qwenvl_cli.py`)**: Clean Python API and CLI tool for cross-plugin integration.
+  * **Centralized Media Utilities (`AILab_Utils.py`)**: Shared tensor conversion, frame sampling, and dynamic budget estimation across both GGUF and Transformers backends.
+  * **Complete User Guide**: In-depth documentation in [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) and [`docs/USER_GUIDE_zh.md`](docs/USER_GUIDE_zh.md). [[Update](update.md#release-notes-v230-2026-08-26)]
+* **2026/08/20**: **v2.2.0** Added native GGUF support for Qwen3.5, 3.6 (MoE), and 3.8. Implemented native `comfy.model_management` for memory clearing. [[Update](update.md#release-notes-v220-2026-08-19)]
 * **2026/02/08**: **v2.1.1**  Fixed compatibility for  Transformers 4.x and 5.x [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-211-20260208)]
 
 * **2026/02/05**: **v2.1.0** Added SageAttention support with per-GPU architecture optimization, improved FP8 model handling, and automatic attention mode selection. [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-210-20260205)]
@@ -47,6 +54,7 @@ The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-
 * **Reproducible Generation**: Use the seed parameter to get consistent outputs.  
 * **Memory Management**: "Keep Model Loaded" option to retain the model in VRAM for faster processing.  
 * **Image & Video Support**: Accepts both single images and video frame sequences as input.  
+* **Intelligent Video Auto-Scaling**: Dynamic context token budget estimation for video inputs, preserving native resolution for small clips while preventing context slot overflow and CUDA OOM on high-res videos.  
 * **Robust Error Handling**: Provides clear error messages for hardware or memory issues.  
 * **Clean Console Output**: Minimal and informative console logs during operation.
 * **SageAttention Support**: GPU-optimized attention mechanism with per-architecture kernels (Ampere, Ada, Hopper, Blackwell).
