@@ -112,7 +112,7 @@ This repo includes **GGUF** nodes powered by `llama-cpp-python` (separate from t
   - `hf_vl_models`: vision-language models (used by QwenVL nodes).  
   - `hf_text_models`: text-only models (used by Prompt Enhancer).  
 - **GGUF models**: `gguf_models.json`  
-- **System prompts**: `AILab_System_Prompts.json` (includes both VL prompts and prompt-enhancer styles).  
+- **System prompts**: `system_prompts.json` (includes both VL prompts and prompt-enhancer styles).  
 
 ## **📥 Download Models**
 

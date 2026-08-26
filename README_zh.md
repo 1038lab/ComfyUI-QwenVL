@@ -106,7 +106,7 @@ pip install sageattention
   - `hf_vl_models`: 视觉语言模型（由 QwenVL 节点使用）。
   - `hf_text_models`: 纯文本模型（由提示词增强器使用）。
 - **GGUF 模型**: `gguf_models.json`
-- **系统提示词**: `AILab_System_Prompts.json`（包含 VL 提示词和提示词增强器样式）。
+- **系统提示词**: `system_prompts.json`（包含 VL 提示词和提示词增强器样式）。
 
 ## **📥 下载模型**
 

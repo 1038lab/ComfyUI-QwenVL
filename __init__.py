@@ -10,10 +10,11 @@ __version__ = "2.3.0"
 current_dir = Path(__file__).parent
 nodes_dir = current_dir / "py"
 
-# Ensure directories are in sys.path
-for path in [current_dir, nodes_dir]:
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+# Ensure py/ directory has the highest import priority
+if str(nodes_dir) not in sys.path:
+    sys.path.insert(0, str(nodes_dir))
+if str(current_dir) not in sys.path:
+    sys.path.append(str(current_dir))
 
 # Initialize node mappings
 NODE_CLASS_MAPPINGS = {}
