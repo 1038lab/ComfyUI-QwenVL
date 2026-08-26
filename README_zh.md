@@ -6,7 +6,14 @@ ComfyUI-QwenVL 是一款自定义节点，它集成了来自阿里云的强大 Q
 
 ## **📰 新闻与更新**
 
-* **2026/08/20**: **v2.2.0** 新增对 Qwen3.5, 3.6 (MoE) 和 3.8 的原生 GGUF 支持。引入原生 `comfy.model_management` 显存清理机制。 [[更新](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#release-notes-v220-2026-08-19)]
+* **2026/08/26**: **v2.3.0** 智能视频自适应缩放与自定义模型架构重大升级！
+  * **智能视频自适应缩放与 Token 预算守护**：彻底解决视频抽帧分析时的上下文槽位溢出（`failed to find a memory slot`）与显存爆炸（CUDA OOM）。自动根据 `ctx` 与 `frame_count` 探查计算单帧安全预算；小尺寸视频保持原画质直通，超限高画质视频（1080p/4K）自动等比缩小。所有高级节点新增 `video_frame_size` 控制项。
+  * **精简统一的自定义模型架构 (`custom_models.json`)**：统一为 `hf_models` 与 `gguf_models` 两大板块，视觉与文本节点无缝加载自定义 GGUF / HF 模型。
+  * **强化版模型下载器 (`AILab_HuggingFaceDownloader`)**：支持独立无输出执行（`OUTPUT_NODE = True`）、智能自动分流（`save_folder: "auto"`）、`mmproj` 视觉投影文件自动发现下载及色彩丰富的 UI 状态卡片。
+  * **共享推理引擎与独立 CLI (`qwenvl_engine.py` / `qwenvl_cli.py`)**：提供便捷的 Python 外部接口与命令行工具。
+  * **统一公共媒体工具库 (`AILab_Utils.py`)**：集中管理张量转换、视频抽帧与预算决策，全面覆盖 GGUF 与 Transformers 双后端。
+  * **完整使用指南**：新增全功能技术手册 [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) 与 [`docs/USER_GUIDE_zh.md`](docs/USER_GUIDE_zh.md)。 [[更新说明](update.md#release-notes-v230-2026-08-26)]
+* **2026/08/20**: **v2.2.0** 新增对 Qwen3.5, 3.6 (MoE) 和 3.8 的原生 GGUF 支持。引入原生 `comfy.model_management` 显存清理机制。 [[更新](update.md#release-notes-v220-2026-08-19)]
 * **2025/02/05**: **v2.1.0** 新增 SageAttention 支持，优化 FP8 模型处理，改进注意力模式选择 [[更新](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#version-210-20250205)]
   * **SageAttention 支持**: 新增 GPU 架构优化内核（SM80、SM89、SM90、SM120）
   * **改进 FP8 处理**: 更好的预量化 FP8 模型支持，自动回退到 SDPA
@@ -42,6 +49,7 @@ ComfyUI-QwenVL 是一款自定义节点，它集成了来自阿里云的强大 Q
 * **可复现生成**：使用 seed 参数可获得一致的输出结果。
 * **内存管理**："保持模型加载"选项可将模型保留在显存中，以加快处理速度。
 * **图像与视频支持**：接受单个图像和视频帧序列作为输入。
+* **智能视频自适应缩放**：动态计算视频输入的安全 Token 预算，小尺寸视频保持原画质，高分辨率视频自动等比缩放，彻底杜绝显存溢出与槽位溢出。
 * **强大的错误处理**：为硬件或内存问题提供清晰的错误信息。
 * **简洁的控制台输出**：在操作过程中提供最少且信息丰富的控制台日志。
 * **SageAttention 支持**：GPU 优化的注意力机制，支持多种 GPU 架构（Ampere、Ada、Hopper、Blackwell）。
