@@ -339,7 +339,7 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         style_entry = self.styles.get(preset_system_prompt, {})
         system_prompt = (custom_system_prompt.strip() or style_entry.get("system_prompt") or "").strip()
         if not system_prompt:
-            raise ValueError("system_prompt is empty; check AILab_System_Prompts.json or preset selection.")
+            raise ValueError("system_prompt is empty; check system_prompts.json or preset selection.")
         system_prompt = (
             f"{system_prompt}\n\n"
             "Return only the final prompt text. No preface, no explanations, no analysis, no JSON, no markdown fences, and no <think>.\n"

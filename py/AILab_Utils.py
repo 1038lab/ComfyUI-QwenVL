@@ -22,7 +22,7 @@ except ImportError:
     folder_paths = _MockFolderPaths()
 
 PLUGIN_DIR = Path(__file__).resolve().parent.parent
-SYSTEM_PROMPTS_PATH = PLUGIN_DIR / "AILab_System_Prompts.json"
+SYSTEM_PROMPTS_PATH = PLUGIN_DIR / "system_prompts.json"
 MINIMAX_H3_PROMPTS_PATH = PLUGIN_DIR / "AILab_MiniMax_H3_Prompts.json"
 LTX_PROMPTS_PATH = PLUGIN_DIR / "AILab_LTX_Prompts.json"
 CUSTOM_MODELS_PATH = PLUGIN_DIR / "custom_models.json"
@@ -154,7 +154,7 @@ def estimate_vram_requirement(repo_name: str) -> dict:
 
 
 def load_system_prompts():
-    """Load system prompts and presets from AILab_System_Prompts.json."""
+    """Load system prompts and presets from system_prompts.json."""
     preset_prompts = ["🖼️ Detailed Description"]
     qwenvl_prompts = {}
     qwen_text_styles = {}
