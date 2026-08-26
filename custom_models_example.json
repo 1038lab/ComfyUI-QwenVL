@@ -1,23 +1,43 @@
 {
   "hf_models": {
-    "My QwenVL Finetune": {
-      "repo_id": "myusername/MyQwenVL-Finetune",
+    "My-Custom-Qwen2.5-VL-7B": {
+      "repo_id": "myusername/Qwen2.5-VL-7B-Finetune",
       "default": false,
       "quantized": false,
       "vram_requirement": {
-        "4bit": 4,
-        "8bit": 6,
-        "full": 10
+        "full": 15.0,
+        "8bit": 8.5,
+        "4bit": 5.0
       }
     },
-    "QwenVL Mini 4bit": {
-      "repo_id": "huggingface-user/qwenvl-mini-4bit",
+    "My-Custom-Qwen3-Text": {
+      "repo_id": "myusername/Qwen3-4B-Instruct-Custom",
       "default": false,
-      "quantized": false,
-      "vram_requirement": {
-        "4bit": 2,
-        "8bit": 4,
-        "full": 8
+      "quantized": false
+    }
+  },
+  "gguf_models": {
+    "Qwen3-VL-4B-Custom-GGUF": {
+      "author": "CustomAuthor",
+      "repo_name": "Qwen3-VL-4B-Custom-GGUF",
+      "repo_id": "CustomAuthor/Qwen3-VL-4B-Custom-GGUF",
+      "mmproj_file": "mmproj-model-f16.gguf",
+      "model_files": [
+        "Qwen3-VL-4B-Custom-Q4_K_M.gguf"
+      ],
+      "defaults": {
+        "context_length": 8192
+      }
+    },
+    "Qwen3-4B-Custom-GGUF": {
+      "author": "CustomAuthor",
+      "repo_name": "Qwen3-4B-Custom-GGUF",
+      "repo_id": "CustomAuthor/Qwen3-4B-Custom-GGUF",
+      "model_files": [
+        "Qwen3-4B-Custom-Q4_K_M.gguf"
+      ],
+      "defaults": {
+        "context_length": 8192
       }
     }
   }
