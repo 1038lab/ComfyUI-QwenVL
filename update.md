@@ -4,6 +4,8 @@
 # Release Notes: v2.3.0 (2026-08-26)
 
 ### 🎬 Intelligent Adaptive Video Scaling & Safe Token Budget
+<img width="614" alt="image" src="https://github.com/user-attachments/assets/df99ea79-89dc-4bd9-a971-f7df33c9fa50" />
+
 - **Dynamic Context Budget Estimation**:
   - Automatically calculates safe per-frame token budget based on the model's active context window (`ctx`) and sampled frame count (`frame_count`).
   - Completely resolves `decode: failed to find a memory slot for batch` errors in GGUF/llama.cpp and CUDA OOM (Out Of Memory) in Transformers backends.
@@ -25,6 +27,8 @@
 - **Updated Documentation**: Added detailed guides in [`docs/custom_models.md`](./docs/custom_models.md) and [`custom_models_example.json`](./custom_models_example.json).
 
 ### 📥 Enhanced HuggingFace Downloader (`AILab_HuggingFaceDownloader`)
+<img width="614" alt="image" src="https://github.com/user-attachments/assets/7857b525-9dd9-4b7e-9425-f9c1aa7bccf2" />
+
 - **Fixed Standalone Execution**: Added `OUTPUT_NODE = True` so the downloader runs independently in workflows without triggering `[WARNING] invalid prompt: {'type': 'prompt_no_outputs'}`.
 - **Smart `mmproj` Auto-Discovery & Download**:
   - Automatically queries the HuggingFace repository to identify and download matching `mmproj*.gguf` visual projector files (prioritizing `F16`/`BF16`).
