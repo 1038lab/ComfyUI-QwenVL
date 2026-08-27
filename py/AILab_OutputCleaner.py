@@ -12,7 +12,11 @@ class OutputCleanConfig:
     strip_json_wrappers: bool = True
     strip_leading_preamble: bool = True
     strip_planning: bool = True
+    normalize_punctuation: bool = True
     keep_first_paragraph_only: bool = False
+
+
+_PUNCT_MAP = str.maketrans({"’": "'", "‘": "'", "“": '"', "”": '"', "—": "-", "–": "-", "…": "...", "\u00a0": " "})
 
 
 _ROLE_PREFIX_RE = re.compile(r"^\s*(assistant|final|output|response|result|prompt)\s*:\s*", re.IGNORECASE)
@@ -84,6 +88,9 @@ def clean_model_output(text: str, config: OutputCleanConfig | None = None) -> st
         cleaned = "\n".join(lines).strip()
 
     cleaned = _MARKER_RE.sub("", cleaned).strip()
+
+    if cfg.normalize_punctuation:
+        cleaned = cleaned.translate(_PUNCT_MAP)
 
     if cfg.keep_first_paragraph_only:
         parts = re.split(r"\n\s*\n", cleaned, maxsplit=1)
