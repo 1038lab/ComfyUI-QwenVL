@@ -16,6 +16,39 @@ if str(nodes_dir) not in sys.path:
 if str(current_dir) not in sys.path:
     sys.path.append(str(current_dir))
 
+# Legacy root files migrated into py/ in v2.3.0
+LEGACY_ROOT_FILES = [
+    "AILab_OutputCleaner.py",
+    "AILab_QwenVL.py",
+    "AILab_QwenVL_GGUF.py",
+    "AILab_QwenVL_GGUF_PromptEnhancer.py",
+    "AILab_QwenVL_PromptEnhancer.py",
+    "AILab_System_Prompts.json",
+]
+
+
+def cleanup_legacy_files():
+    """Automatically clean up obsolete root files left over by ComfyUI Manager / git updates."""
+    old_prompts = current_dir / "AILab_System_Prompts.json"
+    new_prompts = current_dir / "system_prompts.json"
+    if old_prompts.exists() and not new_prompts.exists():
+        try:
+            old_prompts.rename(new_prompts)
+        except Exception:
+            pass
+
+    for filename in LEGACY_ROOT_FILES:
+        target = current_dir / filename
+        if target.exists() and target.is_file():
+            try:
+                target.unlink()
+            except Exception:
+                pass
+
+
+# Auto-cleanup legacy root files on initialization
+cleanup_legacy_files()
+
 # Initialize node mappings
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
