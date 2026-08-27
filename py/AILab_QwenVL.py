@@ -646,6 +646,7 @@ class QwenVLBase:
         load_kwargs = {
             "attn_implementation": actual_attn_impl,
             "use_safetensors": True,
+            "trust_remote_code": True,
         }
         
         if is_prequantized_fp8:
