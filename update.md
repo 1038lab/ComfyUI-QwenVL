@@ -1,6 +1,6 @@
 # ComfyUI-QwenVL Update Log
 
-## Version 2.3.1 (2026-08-31)
+# Release Notes: v2.3.1 (2026-08-31)
 
 ### 🐛 Bug Fixes 
 - **Cleaned Deprecations**: Removed deprecated fallback chains and legacy references to `custom_gguf_models.json`.
@@ -10,6 +10,8 @@
 
 > **💡 Note for ComfyUI Users**: After downloading a new model, simply **refresh your browser (F5 / Ctrl+R)** to update the model dropdown lists in the UI!
 ---
+
+# Release Notes: v2.3.0 (2026-08-26)
 
 ### 🎬 Intelligent Adaptive Video Scaling & Safe Token Budget
 <img width="614" alt="image" src="https://github.com/user-attachments/assets/df99ea79-89dc-4bd9-a971-f7df33c9fa50" />
