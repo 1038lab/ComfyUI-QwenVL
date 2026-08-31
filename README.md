@@ -5,6 +5,7 @@ The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-
 ![QwenVL_V1.1.0](https://github.com/user-attachments/assets/13e89746-a04e-41a3-9026-7079b29e149c)
 
 ## **📰 News & Updates**
+* **2026/08/31**: **v2.3.1** Fix several bugs! [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#release-notes-v231-2026-08-31)]
 * **2026/08/26**: **v2.3.0** Intelligent Video Scaling & Custom Models Upgrade!
   * **Intelligent Video Auto-Scaling & Token Budget Safeguard**: Solves context slot overflow (`failed to find a memory slot`) and CUDA OOM. Automatically computes safe per-frame token budget based on `ctx` and `frame_count`; preserves full native resolution for small video frames while gracefully downscaling high-res videos (1080p/4K). Added `video_frame_size` control to all Advanced nodes.
   * **Unified Custom Models Architecture (`custom_models.json`)**: Simplified 2-section design (`hf_models` & `gguf_models`) with full support for custom GGUF and HF models across vision and text nodes.
