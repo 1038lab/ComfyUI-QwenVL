@@ -3,8 +3,22 @@ import inspect
 import io
 import json
 import math
+import os
 import re
+import sys
 from pathlib import Path
+
+# Setup DLL directory for Windows Conda environments before loading C++ bindings (llama_cpp)
+if sys.platform == "win32":
+    conda_library_bin = os.path.abspath(os.path.join(sys.prefix, "Library", "bin"))
+    if os.path.exists(conda_library_bin):
+        if conda_library_bin not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = conda_library_bin + os.path.pathsep + os.environ.get("PATH", "")
+        if hasattr(os, "add_dll_directory"):
+            try:
+                os.add_dll_directory(conda_library_bin)
+            except Exception:
+                pass
 
 import numpy as np
 import torch

@@ -17,7 +17,6 @@ from pathlib import Path
 
 import torch
 from huggingface_hub import hf_hub_download, snapshot_download
-from llama_cpp import Llama
 
 import folder_paths
 from AILab_OutputCleaner import OutputCleanConfig, clean_model_output
@@ -33,6 +32,11 @@ from AILab_Utils import (
     load_system_prompts,
     parse_gguf_repos,
 )
+
+try:
+    from llama_cpp import Llama
+except Exception:
+    Llama = None
 
 _prompt_data = load_system_prompts()
 STYLES = _prompt_data["qwen_text_styles"]
@@ -233,6 +237,10 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
     def _load_model(self, model_name, device):
         resolved = self._resolve_model_path(model_name)
         self._maybe_download_model(model_name, resolved)
+        if Llama is None:
+            raise RuntimeError(
+                "[QwenVL] llama_cpp is not available. Install the GGUF dependency first. See docs/GGUF_MANUAL_INSTALL.md"
+            )
         model_cfg = self.gguf_models["models"].get(model_name, {})
         context_length = model_cfg.get("context_length", 8192)
         signature = (resolved, context_length, device)
