@@ -1,7 +1,15 @@
 # ComfyUI-QwenVL Update Log
 
+## Version 2.3.1 (2026-08-31)
+
+### 🐛 Bug Fixes 
+- **Cleaned Deprecations**: Removed deprecated fallback chains and legacy references to `custom_gguf_models.json`.
+- **FP8 Model Remote Code Fix (Issue https://github.com/1038lab/ComfyUI-QwenVL/issues/183)**: Fixed `ValueError: Kernel repository 'kernels-community/finegrained-fp8' could not verify publisher trust status` by passing `trust_remote_code=True` to `AutoModelForVision2Seq` during model loading.
+- **Typographic Character Normalization (Issue https://github.com/1038lab/ComfyUI-QwenVL/issues/180)**: Automatically normalizes smart quotes (`“”‘’`), em-dashes (`—–`), and non-breaking spaces into standard ASCII characters in `AILab_OutputCleaner.py`.
+- **Windows Conda DLL Path Fix (Issue https://github.com/1038lab/ComfyUI-QwenVL/issues/186)**: Added dynamic `Library\bin` DLL directory resolution in `AILab_Utils.py`, resolving `[WinError 2] The system cannot find the file specified` when initializing GGUF / `llama_cpp` in Windows Conda environments.
+
+> **💡 Note for ComfyUI Users**: After downloading a new model, simply **refresh your browser (F5 / Ctrl+R)** to update the model dropdown lists in the UI!
 ---
-# Release Notes: v2.3.0 (2026-08-26)
 
 ### 🎬 Intelligent Adaptive Video Scaling & Safe Token Budget
 <img width="614" alt="image" src="https://github.com/user-attachments/assets/df99ea79-89dc-4bd9-a971-f7df33c9fa50" />
@@ -60,7 +68,7 @@
 <img alt="image" src="https://github.com/user-attachments/assets/b257ad2e-b639-4b55-ac00-07a11955c187" />
 
 ### 🛠️ Feature Additions & Bug Fixes
-- **VRAM Leak Fix (Issue #182)**: Fixed a critical issue where VRAM was not released after inference when `keep_model_loaded=False`. The GGUF nodes now explicitly call `self.llm.close()` to free the GGML C++ backend memory, and the Transformer nodes now properly clear `torch._dynamo` cache and force PyTorch garbage collection.
+- **VRAM Leak Fix (Issue https://github.com/1038lab/ComfyUI-QwenVL/issues/182)**: Fixed a critical issue where VRAM was not released after inference when `keep_model_loaded=False`. The GGUF nodes now explicitly call `self.llm.close()` to free the GGML C++ backend memory, and the Transformer nodes now properly clear `torch._dynamo` cache and force PyTorch garbage collection.
 - **New HuggingFace Downloader Node**: Added `AILab_HuggingFaceDownloader` to allow users to directly download GGUF/HF models or entire repositories from HuggingFace directly into ComfyUI's model directories.
 - **Prompt Enhancer Fix (PR #179)**: Fixed a critical bug in `AILab_QwenVL_PromptEnhancer` (Transformers) where instruct models (like Qwen3-4B) would ignore system instructions and act as text-continuations. The node now correctly applies the tokenizer's chat template (`apply_chat_template`).
 - **GGUF Prompt Enhancer Optimization**: Removed hardcoded `"chat_format": "qwen"` in `AILab_QwenVL_GGUF_PromptEnhancer.py`. The node now dynamically reads the native chat template embedded directly within the GGUF file (e.g., ChatML for Qwen3), ensuring perfect special-token formatting for newer architectures.
