@@ -1,27 +1,16 @@
 import { app } from "/scripts/app.js";
 
 const COLOR_THEMES = {
-    QwenVL: { nodeColor: "#28403f", nodeBgColor: "#28403f", width: 340 },
-    QwenVLGGUF: { nodeColor: "#474539", nodeBgColor: "#474539", width: 340 },
-    Tools: { nodeColor: "#28403f", nodeBgColor: "#233238", width: 420 },
-    Enhancer: { nodeColor: "#374445", nodeBgColor: "#474539", width: 340 },
+    H3promptor: { nodeColor: "#221f33ff", nodeBgColor: "#3b3850ff" },
+    H3Sampler: { nodeColor: "#2c3145ff", nodeBgColor: "#2c3145ff", width: 340 },
 };
 
 const NODE_COLORS = {
-    // QwenVL nodes
-    "AILab_QwenVL": "QwenVL",
-    "AILab_QwenVL_Advanced": "QwenVL",
-    "AILab_QwenVL_PromptEnhancer": "Enhancer",
-    "AILab_QwenVL_GGUF": "QwenVLGGUF",
-    "AILab_QwenVL_GGUF_Advanced": "QwenVLGGUF",
-    "AILab_QwenVL_GGUF_PromptEnhancer": "Enhancer",
-    "AILab_QwenVL_VideoPromptEnhancer": "Enhancer",
-    "AILab_QwenVL_MiniMax_H3_Director": "Enhancer",
-    "AILab_QwenVL_LTX_Video_Enhancer": "Enhancer",
-
-    // Tools
-    "AILab_QwenVL_PromptLibrary": "Tools",
-    "AILab_HuggingFaceDownloader": "Tools",
+    "H3_Promptor": "H3promptor",
+    "H3_Vision": "H3promptor",
+    "H3_Model_Loader": "H3Sampler",
+    "H3_Video_Sampler": "H3Sampler",
+    "AILab_MinimaxAllInOne": "H3Sampler",
 };
 
 function setNodeColors(node, theme) {
@@ -39,7 +28,7 @@ function setNodeColors(node, theme) {
 }
 
 const ext = {
-    name: "QwenVL.appearance",
+    name: "H3.appearance",
 
     nodeCreated(node) {
         const nclass = node.comfyClass;
