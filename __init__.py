@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 __repo_name__ = "ComfyUI-QwenVL"
-__version__ = "2.3.0"
+__version__ = "2.3.1"
 
 # Locate current and node directories
 current_dir = Path(__file__).parent
@@ -16,6 +16,7 @@ if str(nodes_dir) not in sys.path:
 if str(current_dir) not in sys.path:
     sys.path.append(str(current_dir))
 
+# ----------------------------------------------------
 # Legacy root files migrated into py/ in v2.3.0
 LEGACY_ROOT_FILES = [
     "AILab_OutputCleaner.py",
@@ -48,6 +49,7 @@ def cleanup_legacy_files():
 
 # Auto-cleanup legacy root files on initialization
 cleanup_legacy_files()
+# ----------------------------------------------------
 
 # Initialize node mappings
 NODE_CLASS_MAPPINGS = {}
