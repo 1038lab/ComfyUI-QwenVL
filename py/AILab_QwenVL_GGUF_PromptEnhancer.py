@@ -143,14 +143,14 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
 
         # Back-compat: allow workflows to pass a filename instead of a catalog key.
         if not entry:
-            wanted = _model_name_to_filename_candidates(model_name)
+            wanted = model_name_to_filename_candidates(model_name)
             for candidate in models.values():
                 filename = candidate.get("filename")
                 if filename and Path(filename).name in wanted:
                     entry = candidate
                     break
 
-        base_dir = _resolve_base_dir(self.gguf_models.get("base_dir") or "LLM/GGUF")
+        base_dir = resolve_base_dir(self.gguf_models.get("base_dir") or "LLM/GGUF")
 
         path = entry.get("path")
         if path:
@@ -158,19 +158,19 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
 
         filename = entry.get("filename")
         if filename:
-            author = _safe_dirname(str(entry.get("author") or entry.get("publisher") or ""))
-            repo_dir = _safe_dirname(str(entry.get("repo_dirname") or model_name))
+            author = safe_dirname(str(entry.get("author") or entry.get("publisher") or ""))
+            repo_dir = safe_dirname(str(entry.get("repo_dirname") or model_name))
             if author and author != "unknown":
                 preferred_dir = base_dir / author / repo_dir
             else:
                 preferred_dir = base_dir / repo_dir
 
-            existing = _find_local_gguf_file(filename, preferred_dir)
+            existing = find_local_gguf_file(filename, preferred_dir)
             if existing:
                 return existing
             return preferred_dir / Path(filename).name
 
-        existing = _find_local_gguf_file(model_name, base_dir)
+        existing = find_local_gguf_file(model_name, base_dir)
         if existing:
             return existing
         return base_dir / model_name
@@ -181,7 +181,7 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         models = self.gguf_models.get("models") or {}
         entry = models.get(model_name) or {}
         if not entry:
-            wanted = _model_name_to_filename_candidates(model_name)
+            wanted = model_name_to_filename_candidates(model_name)
             for candidate in models.values():
                 filename = candidate.get("filename")
                 if filename and Path(filename).name in wanted:
@@ -368,7 +368,7 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         if english_output:
             translated = self._invoke_llama(
                 system_prompt=(
-                    PROMPT_CONFIG.get("translation_prompt")
+                    TRANSLATION_PROMPT
                     or "Return a single English paragraph (150-300 words). No prefixes, bullets, JSON, or <think>. "
                     "Cover subject, environment, lighting, camera settings, composition, color/texture, and style. Output only the prompt."
                 ),
