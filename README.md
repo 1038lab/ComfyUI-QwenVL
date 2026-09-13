@@ -1,10 +1,13 @@
 # **QwenVL for ComfyUI**
 
-The ComfyUI-QwenVL custom node integrates the powerful Qwen-VL series of vision-language models (LVLMs) from Alibaba Cloud, including the latest Qwen3-VL and Qwen2.5-VL, plus GGUF backends and text-only Qwen3 support. This advanced node enables seamless multimodal AI capabilities within your ComfyUI workflows, allowing for efficient text generation, image understanding, and video analysis.
+The ComfyUI-QwenVL suite brings Alibaba Cloud’s next-generation vision-language and reasoning models into ComfyUI. Featuring native support for the full Qwen3-VL family (2B to 32B, Instruct & Thinking variants), Qwen3.5-VL, Qwen3.6-VL (MoE), Qwen3.8-VL, and Qwen2.5-VL, alongside text-only Qwen3 prompt enhancers. Powered by a high-performance dual-engine architecture (GGUF via llama.cpp & PyTorch via Transformers + SageAttention), it delivers ultra-fast image perception, long-sequence video analysis with intelligent token-budget auto-scaling, and zero-config custom model expansion.
 
 ![QwenVL_V1.1.0](https://github.com/user-attachments/assets/13e89746-a04e-41a3-9026-7079b29e149c)
 
 ## **📰 News & Updates**
+* **2026/09/13**: **v2.3.2** Custom File Directories & Mirror Download Acceleration! [[Update](update.md#release-notes-v232-2026-09-13)]
+  * **Multi-Drive & Local Folder Support**: Directly load HuggingFace and GGUF models stored on other drives without re-downloading via seamless `extra_model_paths.yaml` integration (case-insensitive `LLM`/`llm` and `gguf`) or directory links.
+  * **hf-mirror.com Download Acceleration**: Added one-click download source toggle in `AILab_HuggingFaceDownloader` for fast downloads in mainland China.
 * **2026/08/31**: **v2.3.1** Fix several bugs! [[Update](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#release-notes-v231-2026-08-31)]
 * **2026/08/26**: **v2.3.0** Intelligent Video Scaling & Custom Models Upgrade!
   * **Intelligent Video Auto-Scaling & Token Budget Safeguard**: Solves context slot overflow (`failed to find a memory slot`) and CUDA OOM. Automatically computes safe per-frame token budget based on `ctx` and `frame_count`; preserves full native resolution for small video frames while gracefully downscaling high-res videos (1080p/4K). Added `video_frame_size` control to all Advanced nodes.

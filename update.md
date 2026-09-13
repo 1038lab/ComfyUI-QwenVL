@@ -1,5 +1,20 @@
 # ComfyUI-QwenVL Update Log
 
+# Release Notes: v2.3.2 (2026-09-13)
+
+### 🚀 New Features & Enhancements
+- **Custom File Directories & Multi-Drive Model Loading (Issue https://github.com/1038lab/ComfyUI-QwenVL/issues/187)**:
+  - **Seamless `extra_model_paths.yaml` Integration**: Models located on external drives or custom directories configured via ComfyUI's standard `extra_model_paths.yaml` are now automatically detected across all nodes (case-insensitively recognizing both uppercase `LLM` and lowercase `llm`, plus `gguf` directories).
+  - **No Duplicate Downloads**: Hugging Face and GGUF models already stored on local disk or external drives are loaded directly without triggering Hugging Face re-downloads.
+  - **Prompt Enhancer Local Model Support**: `AILab_QwenVL_PromptEnhancer` now resolves text models from ComfyUI LLM directories locally before checking remote repositories.
+  - **Clean & Unified Architecture**: Preserves the standard, portable schema in `custom_models.json` matching downloader auto-generation.
+  - **Updated Documentation**: Added a comprehensive guide in [`docs/custom_models.md`](./docs/custom_models.md).
+- **HuggingFace Mirror Acceleration (`hf-mirror.com`)**:
+  - Added `download_source` option to `AILab_HuggingFaceDownloader` allowing one-click switching between `HuggingFace (Official)` and `hf-mirror (China Mirror)`.
+  - Accelerates downloads of full repositories, single GGUF files, and `mmproj` visual projectors for users with limited direct connectivity to Hugging Face, with zero additional dependencies.
+
+---
+
 # Release Notes: v2.3.1 (2026-08-31)
 
 ### 🐛 Bug Fixes 

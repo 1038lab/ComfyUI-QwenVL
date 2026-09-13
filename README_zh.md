@@ -1,11 +1,15 @@
 # **QwenVL for ComfyUI**
 
-ComfyUI-QwenVL 是一款自定义节点，它集成了来自阿里云的强大 Qwen-VL 系列视觉语言模型（LVLMs），包括最新的 Qwen3-VL 和 Qwen2.5-VL。这款高级节点能够在您的 ComfyUI 工作流中实现无缝的多模态 AI 功能，支持高效的文本生成、图像理解和视频分析。
+ComfyUI-QwenVL 为 ComfyUI 提供全方位的视觉语言与深度推理能力。全面支持阿里巴巴 Qwen3-VL 全系列模型（2B 至 32B，含 Instruct 与 Thinking 深度思考版）、Qwen3.5-VL、Qwen3.6-VL (MoE 混合专家)、Qwen3.8-VL 与 Qwen2.5-VL，以及纯文本 Qwen3 提示词增强器。基于 GGUF (llama.cpp) 与 Transformers (PyTorch + SageAttention) 高性能双后端架构，支持即时图像理解、智能自适应视频长序列分析与零配置自定义模型扩展。
 
 ![QwenVL_V1.1.0](https://github.com/user-attachments/assets/13e89746-a04e-41a3-9026-7079b29e149c)
 
 ## **📰 新闻与更新**
 
+* **2026/09/13**: **v2.3.2** 支持自定义/跨盘模型路径与 hf-mirror 下载加速！ [[更新说明](update.md#release-notes-v232-2026-09-13)]
+  * **外置盘与跨盘模型直通支持**：直接读取存放于其他盘或现有目录的 HuggingFace 和 GGUF 模型，跳过重复联网下载。无缝兼容 ComfyUI 的 `extra_model_paths.yaml`（不区分大小写支持 `LLM` / `llm` 和 `gguf`），保持 `custom_models.json` 配置纯净统一。
+  * **hf-mirror.com 国内高速镜像**：`AILab_HuggingFaceDownloader` 节点内置一键下载源切换，支持国内网络满速下载完整模型、GGUF 单文件及 `mmproj` 视觉投影文件。
+* **2026/08/31**: **v2.3.1** 修复多项稳定性 Bug！ [[更新说明](https://github.com/1038lab/ComfyUI-QwenVL/blob/main/update.md#release-notes-v231-2026-08-31)]
 * **2026/08/26**: **v2.3.0** 智能视频自适应缩放与自定义模型架构重大升级！
   * **智能视频自适应缩放与 Token 预算守护**：彻底解决视频抽帧分析时的上下文槽位溢出（`failed to find a memory slot`）与显存爆炸（CUDA OOM）。自动根据 `ctx` 与 `frame_count` 探查计算单帧安全预算；小尺寸视频保持原画质直通，超限高画质视频（1080p/4K）自动等比缩小。所有高级节点新增 `video_frame_size` 控制项。
   * **精简统一的自定义模型架构 (`custom_models.json`)**：统一为 `hf_models` 与 `gguf_models` 两大板块，视觉与文本节点无缝加载自定义 GGUF / HF 模型。
