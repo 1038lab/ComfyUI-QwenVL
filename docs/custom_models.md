@@ -57,5 +57,43 @@ All custom models are organized into just two clear sections:
 
 ---
 
+## 💾 Using Models from Another Drive or Local Directory
+
+If you already have models downloaded on your disk (or locally fine-tuned models) and want to use them **without downloading from HuggingFace**, follow ComfyUI's standard model directory architecture:
+
+### Method 1: Via ComfyUI's `extra_model_paths.yaml` (Recommended)
+In your `ComfyUI/extra_model_paths.yaml`, configure your external drive or model directory:
+
+```yaml
+my_other_drive:
+    base_path: D:/models/
+    llm: LLM
+```
+Place your models inside:
+- **HF Models**: `D:/models/LLM/<repo_name>/` (containing `config.json` & weights)
+- **GGUF Models**: `D:/models/LLM/GGUF/<repo_name>/` (or directly inside `D:/models/LLM/`)
+
+Register the model in `custom_models.json` using its matching `repo_id` (e.g. `"repo_id": "author/repo_name"`). The nodes automatically scan all paths registered in `extra_model_paths.yaml` (both uppercase `LLM` and lowercase `llm`), load the local weights, and skip downloading.
+
+### Method 2: Standard ComfyUI Models Folder
+Place your model folder into:
+```
+ComfyUI/models/LLM/<repo_name>/
+```
+As long as `*.safetensors` or `*.bin` files exist locally, the node loads from disk directly and skips downloading.
+
+### Method 3: Directory Junction / Symlink (Recommended for Zero-Copy)
+To seamlessly share models across drives without duplicating files or reconfiguring:
+- **Windows** (run in Command Prompt or PowerShell):
+  ```cmd
+  mklink /J "path\to\ComfyUI\models\LLM" "D:\YourModels\LLM"
+  ```
+- **Linux / macOS**:
+  ```bash
+  ln -s /path/to/other_drive/LLM path/to/ComfyUI/models/LLM
+  ```
+
+---
+
 ## 📥 Automatic Registration via Downloader
 Using the **QwenVL HuggingFace Downloader 📥** node (`AILab_HuggingFaceDownloader`), any downloaded model will be automatically created and registered into `custom_models.json` with all correct settings and matching `mmproj` files!
