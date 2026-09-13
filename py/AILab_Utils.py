@@ -30,8 +30,15 @@ except ImportError:
     class _MockFolderPaths:
         models_dir = Path("models")
         folder_names_and_paths = {}
-        @staticmethod
-        def get_folder_paths(name):
+        @classmethod
+        def get_folder_paths(cls, name):
+            if name in cls.folder_names_and_paths:
+                val = cls.folder_names_and_paths[name]
+                if isinstance(val, (list, tuple)) and len(val) > 0 and isinstance(val[0], list):
+                    return val[0]
+                elif isinstance(val, list):
+                    return val
+                return [val]
             return [str(Path("models") / name)]
     folder_paths = _MockFolderPaths()
 
@@ -73,15 +80,52 @@ def resolve_base_dir(base_dir_value: str = "LLM/GGUF") -> Path:
     return target
 
 
+def get_comfyui_llm_paths() -> list[Path]:
+    models_dir = Path(folder_paths.models_dir)
+    paths = [models_dir / "LLM", models_dir / "llm"]
+    if hasattr(folder_paths, "folder_names_and_paths"):
+        for key in ["LLM", "llm"]:
+            if key in folder_paths.folder_names_and_paths:
+                for p in folder_paths.get_folder_paths(key):
+                    p_path = Path(p)
+                    if p_path not in paths:
+                        paths.append(p_path)
+    return paths
+
+
+def resolve_hf_model_path(repo_id: str) -> Path | None:
+    repo_clean = (repo_id or "").replace("\\", "/").strip()
+    repo_parts = repo_clean.split("/")
+    author = repo_parts[0] if len(repo_parts) > 1 else ""
+    repo_name = repo_parts[-1] if repo_parts else ""
+    if not repo_name:
+        return None
+
+    for base in get_comfyui_llm_paths():
+        if not base.exists():
+            continue
+        candidates = [
+            base / author / repo_name if author else None,
+            base / repo_name,
+            base / "Qwen-VL" / repo_name,
+            base / "hf" / author / repo_name if author else None,
+        ]
+        for c in candidates:
+            if c is not None and c.is_dir():
+                if any(c.glob("*.safetensors")) or any(c.glob("*.bin")) or (c / "config.json").exists():
+                    return c
+    return None
+
+
 def find_local_gguf_file(filename: str | None, preferred_dir: Path, allow_recursive: bool = True) -> Path | None:
     """Check for existing local file across candidate directories to avoid re-downloading."""
     if not filename:
         return None
+
     fname = Path(filename).name
     if not fname:
         return None
 
-    # 1. Preferred target dir
     p = preferred_dir / fname
     if p.exists() and p.is_file():
         return p
@@ -89,18 +133,40 @@ def find_local_gguf_file(filename: str | None, preferred_dir: Path, allow_recurs
     if not allow_recursive:
         return None
 
-    # 2. Check candidate standard directories (both uppercase LLM and lowercase llm)
     models_dir = Path(folder_paths.models_dir)
+    candidate_bases = [models_dir / "LLM", models_dir / "llm"]
+    if hasattr(folder_paths, "folder_names_and_paths"):
+        for key in ["LLM", "llm", "gguf", "GGUF"]:
+            if key in folder_paths.folder_names_and_paths:
+                for bp in folder_paths.get_folder_paths(key):
+                    bp_path = Path(bp)
+                    if bp_path not in candidate_bases:
+                        candidate_bases.append(bp_path)
+
     candidates = [
         preferred_dir,
         preferred_dir.parent if preferred_dir != models_dir else None,
-        models_dir / "LLM" / "GGUF",
-        models_dir / "llm" / "GGUF",
-        models_dir / "LLM",
-        models_dir / "llm",
     ]
+    for b in candidate_bases:
+        candidates.extend([
+            b / "GGUF",
+            b / "gguf",
+            b,
+        ])
+
+    seen_candidates = set()
     for c in candidates:
-        if c is None or not c.exists():
+        if c is None:
+            continue
+        try:
+            c_resolved = str(c.resolve()) if c.exists() else str(c)
+        except Exception:
+            c_resolved = str(c)
+        if c_resolved in seen_candidates:
+            continue
+        seen_candidates.add(c_resolved)
+
+        if not c.exists():
             continue
         c_path = c / fname
         if c_path.exists() and c_path.is_file():

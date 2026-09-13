@@ -54,6 +54,7 @@ from AILab_Utils import (
     tensor_to_pil,
     sample_video_frames,
     resolve_safe_video_max_side,
+    resolve_hf_model_path,
 )
 
 NODE_DIR = PLUGIN_DIR
@@ -451,33 +452,17 @@ def ensure_model(model_name):
     info = HF_ALL_MODELS.get(model_name)
     if not info:
         raise ValueError(f"Model '{model_name}' not in config")
-    repo_id = info["repo_id"]
+    repo_id = info.get("repo_id", "")
+
+    local_path = resolve_hf_model_path(repo_id)
+    if local_path is not None:
+        return str(local_path)
+
     repo_parts = repo_id.split("/")
     author = repo_parts[0] if len(repo_parts) > 1 else ""
     repo_name = repo_parts[-1]
 
-    # Check candidate local folders across ComfyUI LLM directories
     base_models_dir = Path(folder_paths.models_dir)
-    llm_paths = [base_models_dir / "LLM", base_models_dir / "llm"]
-    if "LLM" in folder_paths.folder_names_and_paths:
-        for p in folder_paths.get_folder_paths("LLM"):
-            llm_paths.append(Path(p))
-
-    for base in llm_paths:
-        if not base.exists():
-            continue
-        candidates = [
-            base / author / repo_name if author else None,
-            base / repo_name,
-            base / "Qwen-VL" / repo_name,
-            base / "hf" / author / repo_name if author else None,
-        ]
-        for c in candidates:
-            if c is not None and c.exists() and c.is_dir():
-                if any(c.glob("*.safetensors")) or any(c.glob("*.bin")):
-                    return str(c)
-
-    # Fallback target: models/LLM/{author}/{repo_name}
     target = (base_models_dir / "LLM" / author / repo_name) if author else (base_models_dir / "LLM" / repo_name)
     target.mkdir(parents=True, exist_ok=True)
 

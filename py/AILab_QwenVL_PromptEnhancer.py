@@ -21,6 +21,7 @@ from AILab_QwenVL import (
 
 from AILab_Utils import (
     load_system_prompts,
+    resolve_hf_model_path,
 )
 
 _prompt_data = load_system_prompts()
@@ -196,7 +197,10 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
         else:
             quant_cfg = None
 
-        signature = (repo_id, quantization, device)
+        local_path = resolve_hf_model_path(repo_id)
+        model_source = str(local_path) if local_path is not None else repo_id
+
+        signature = (model_source, quantization, device)
         if self.text_model is not None and self.text_signature == signature:
             return
 
@@ -211,8 +215,8 @@ class AILab_QwenVL_PromptEnhancer(QwenVLBase):
             load_kwargs["torch_dtype"] = torch.float16 if device == "cuda" else torch.float32
 
         print(f"[QwenVL] Loading text model {model_name} ({quantization})")
-        self.text_tokenizer = AutoTokenizer.from_pretrained(repo_id, trust_remote_code=True)
-        self.text_model = AutoModelForCausalLM.from_pretrained(repo_id, trust_remote_code=True, **load_kwargs).eval()
+        self.text_tokenizer = AutoTokenizer.from_pretrained(model_source, trust_remote_code=True)
+        self.text_model = AutoModelForCausalLM.from_pretrained(model_source, trust_remote_code=True, **load_kwargs).eval()
         self.text_model.to(device)
         self.text_signature = signature
 
