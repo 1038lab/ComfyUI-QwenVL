@@ -1,5 +1,8 @@
 import { app } from "/scripts/app.js";
 
+const COPY_ICON_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+const CHECK_ICON_SVG = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#38b26e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+
 function escapeHtml(str) {
     if (!str) return "";
     return String(str)
@@ -20,20 +23,25 @@ function buildRichSummaryHTML(data, rawText) {
         if (data.registration && data.registration.entry) {
             const regSnippet = JSON.stringify({ [data.registration.key]: data.registration.entry }, null, 2);
             regHtml = `
-                <div style="margin-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.15); padding-top: 6px; flex: 1; display: flex; flex-direction: column; min-height: 60px; overflow: hidden;">
-                    <span style="color: #2ed573; font-weight: 700; font-size: 11.5px; flex-shrink: 0;">• Registered in custom_models.json [${escapeHtml(data.registration.section)}]:</span>
-                    <pre style="margin: 4px 0 0 0; padding: 6px 8px; background: rgba(0, 0, 0, 0.5); border-radius: 6px; color: #7bed9f; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 10.5px; line-height: 1.4; white-space: pre-wrap; word-break: break-all; flex: 1; overflow-y: auto;">${escapeHtml(regSnippet)}</pre>
+                <div style="margin-top: 8px; border-top: 1px dashed rgba(255, 255, 255, 0.15); padding-top: 6px; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; flex-shrink: 0;">
+                        <span style="color: #38b26e; font-weight: 700; font-size: 11.5px;">• Registered in custom_models.json [${escapeHtml(data.registration.section)}]:</span>
+                        <button type="button" class="ailab-copy-json-btn" title="Copy JSON configuration" style="box-sizing: border-box; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; color: #38b26e; background: rgba(46, 125, 50, 0.15); border: 1px solid rgba(56, 178, 110, 0.35); border-radius: 4px; cursor: pointer; transition: all 0.2s ease; outline: none; padding: 0;">
+                            ${COPY_ICON_SVG}
+                        </button>
+                    </div>
+                    <pre class="ailab-download-json-pre" style="margin: 0; padding: 8px 10px; background: rgba(0, 0, 0, 0.5); border-radius: 6px; color: #68d391; font-family: Consolas, Monaco, 'Courier New', monospace; font-size: 10.5px; line-height: 1.45; white-space: pre-wrap; word-break: break-all; flex: 1; min-height: 0; overflow-y: auto;">${escapeHtml(regSnippet)}</pre>
                 </div>
             `;
         }
 
         return `
-            <div class="ailab-download-card" style="box-sizing: border-box; width: 100%; height: 100%; min-height: 100%; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11.5px; line-height: 1.5; color: #f1f2f6; background: rgba(18, 26, 33, 0.95); border: 1px solid rgba(0, 210, 211, 0.35); border-radius: 8px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); overflow: hidden;">
+            <div class="ailab-download-card" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 11.5px; line-height: 1.5; color: #f1f2f6; background: rgba(18, 26, 33, 0.95); border: 1px solid rgba(0, 210, 211, 0.35); border-radius: 8px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); overflow: hidden;">
                 <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.12); padding-bottom: 6px; margin-bottom: 8px; flex-shrink: 0;">
                     <span style="font-weight: 700; color: #00d2d3; font-size: 12px; letter-spacing: 0.3px;">
                         📥 QwenVL Downloader Summary
                     </span>
-                    <span style="background: rgba(46, 213, 115, 0.2); color: #2ed573; border: 1px solid rgba(46, 213, 115, 0.5); padding: 1px 7px; border-radius: 10px; font-weight: 700; font-size: 10.5px;">
+                    <span style="background: rgba(46, 125, 50, 0.2); color: #38b26e; border: 1px solid rgba(56, 178, 110, 0.35); padding: 1px 8px; border-radius: 10px; font-weight: 700; font-size: 10.5px;">
                         ✅ Completed
                     </span>
                 </div>
@@ -54,7 +62,7 @@ function buildRichSummaryHTML(data, rawText) {
         `;
     } else if (data && data.status === "error") {
         return `
-            <div class="ailab-download-card" style="box-sizing: border-box; width: 100%; height: 100%; min-height: 100%; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; line-height: 1.5; color: #ff6b81; background: rgba(40, 18, 24, 0.95); border: 1px solid rgba(255, 71, 87, 0.5); border-radius: 8px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); overflow: hidden;">
+            <div class="ailab-download-card" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; line-height: 1.5; color: #ff6b81; background: rgba(40, 18, 24, 0.95); border: 1px solid rgba(255, 71, 87, 0.5); border-radius: 8px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); overflow: hidden;">
                 <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 71, 87, 0.3); padding-bottom: 6px; margin-bottom: 8px; flex-shrink: 0;">
                     <span style="font-weight: 700; color: #ff4757; font-size: 12px;">❌ Download Failed</span>
                     <span style="background: rgba(255, 71, 87, 0.2); color: #ff4757; border: 1px solid rgba(255, 71, 87, 0.5); padding: 1px 7px; border-radius: 10px; font-weight: 700; font-size: 10.5px;">Error</span>
@@ -63,7 +71,7 @@ function buildRichSummaryHTML(data, rawText) {
                     <span style="color: #ffd32a; font-weight: 700;">• Repository:</span>
                     <span style="color: #ffffff; margin-left: 4px;">${escapeHtml(data.repo_id || "")}</span>
                 </div>
-                <div style="margin-top: 6px; padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border-radius: 4px; color: #ff7675; font-family: Consolas, monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; flex: 1; overflow-y: auto;">
+                <div style="margin-top: 6px; padding: 6px 8px; background: rgba(0, 0, 0, 0.3); border-radius: 4px; color: #ff7675; font-family: Consolas, monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all; flex: 1; min-height: 0; overflow-y: auto;">
                     ${escapeHtml(data.error || "Unknown error occurred")}
                 </div>
             </div>
@@ -78,7 +86,7 @@ function buildRichSummaryHTML(data, rawText) {
         if (line.includes("Download Summary")) {
             resultHtml += `<div style="font-weight: 700; color: #00d2d3; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 4px; margin-bottom: 6px; flex-shrink: 0;">${escapeHtml(line)}</div>`;
         } else if (line.includes("Status:") && line.includes("Completed")) {
-            resultHtml += `<div style="margin-bottom: 4px; flex-shrink: 0;"><span style="color: #ffd32a; font-weight: 700;">• Status:</span> <span style="color: #2ed573; font-weight: 700; background: rgba(46, 213, 115, 0.15); padding: 1px 6px; border-radius: 4px;">✅ Completed Successfully</span></div>`;
+            resultHtml += `<div style="margin-bottom: 4px; flex-shrink: 0;"><span style="color: #ffd32a; font-weight: 700;">• Status:</span> <span style="color: #38b26e; font-weight: 700; background: rgba(46, 125, 50, 0.2); padding: 1px 6px; border-radius: 4px;">✅ Completed Successfully</span></div>`;
         } else if (line.startsWith("• Repository:")) {
             resultHtml += `<div style="margin-bottom: 4px; flex-shrink: 0;"><span style="color: #ffd32a; font-weight: 700;">• Repository:</span> <span style="color: #ffffff; font-weight: 600; margin-left: 4px;">${escapeHtml(line.replace("• Repository:", "").trim())}</span></div>`;
         } else if (line.startsWith("• Save Location:")) {
@@ -88,25 +96,28 @@ function buildRichSummaryHTML(data, rawText) {
         } else if (line.trim().startsWith("- ")) {
             resultHtml += `<div style="margin-left: 12px; color: #d2dae2; font-family: Consolas, Monaco, monospace; font-size: 11px; flex-shrink: 0;">${escapeHtml(line.trim())}</div>`;
         } else if (line.includes("Registered to custom_models.json")) {
-            resultHtml += `<div style="margin-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 4px; flex-shrink: 0;"><span style="color: #2ed573; font-weight: 700; font-size: 11px;">${escapeHtml(line)}</span></div>`;
+            resultHtml += `<div style="margin-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 4px; flex-shrink: 0;"><span style="color: #38b26e; font-weight: 700; font-size: 11px;">${escapeHtml(line)}</span></div>`;
         } else {
             resultHtml += `<div style="color: #a4b0be; font-family: Consolas, monospace; font-size: 10.5px;">${escapeHtml(line)}</div>`;
         }
     }
-    return `<div class="ailab-download-card" style="box-sizing: border-box; width: 100%; height: 100%; min-height: 100%; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; line-height: 1.5; color: #f1f2f6; background: rgba(18, 26, 33, 0.95); border: 1px solid rgba(0, 210, 211, 0.35); border-radius: 8px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); overflow: auto;">${resultHtml}</div>`;
+    return `<div class="ailab-download-card" style="box-sizing: border-box; width: 100%; height: 100%; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11.5px; line-height: 1.5; color: #f1f2f6; background: rgba(18, 26, 33, 0.95); border: 1px solid rgba(0, 210, 211, 0.35); border-radius: 8px; padding: 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); overflow: auto;">${resultHtml}</div>`;
 }
 
-const BASE_INPUTS_HEIGHT = 184;
-const INITIAL_NODE_HEIGHT = 188;
-
-function syncContentSize(node, size) {
-    const domWidget = node.widgets?.find((w) => w.name === "download_display");
-    if (domWidget && domWidget.element) {
-        const nodeH = size ? size[1] : (node.size ? node.size[1] : INITIAL_NODE_HEIGHT);
-        const availableHeight = Math.max(120, Math.round(nodeH - BASE_INPUTS_HEIGHT));
-        domWidget.element.style.height = `${availableHeight}px`;
+function getInputsBottom(node) {
+    if (!node.widgets || node.widgets.length === 0) return 210;
+    let maxBottom = 0;
+    for (const w of node.widgets) {
+        if (w.name === "download_display") continue;
+        if (typeof w.last_y === "number") {
+            const h = (typeof w.computeSize === "function" ? w.computeSize(node.size[0])[1] : w.height) || 26;
+            maxBottom = Math.max(maxBottom, w.last_y + h);
+        }
     }
+    return maxBottom > 50 ? maxBottom + 10 : 210;
 }
+
+const INITIAL_NODE_HEIGHT = 214;
 
 app.registerExtension({
     name: "AILab.HuggingFaceDownloader",
@@ -114,7 +125,7 @@ app.registerExtension({
     nodeCreated(node) {
         if (node.comfyClass === "AILab_HuggingFaceDownloader") {
             requestAnimationFrame(() => {
-                node.size = [Math.max(node.size?.[0] || 420, 420), INITIAL_NODE_HEIGHT];
+                node.size = [Math.max(node.size?.[0] || 440, 440), INITIAL_NODE_HEIGHT];
                 if (typeof node.setSize === "function") {
                     node.setSize(node.size);
                 }
@@ -128,9 +139,18 @@ app.registerExtension({
             const origOnResize = nodeType.prototype.onResize;
             nodeType.prototype.onResize = function (size) {
                 origOnResize?.apply(this, arguments);
-                size[0] = Math.max(size[0], 360);
-                size[1] = Math.max(size[1], INITIAL_NODE_HEIGHT);
-                syncContentSize(this, size);
+                size[0] = Math.max(size[0], 380);
+                const inputsBottom = getInputsBottom(this);
+                const domWidget = this.widgets?.find((w) => w.name === "download_display");
+
+                if (domWidget && domWidget.element) {
+                    const minH = inputsBottom + 160;
+                    size[1] = Math.max(size[1], minH);
+                    const availH = Math.max(size[1] - inputsBottom - 16, 120);
+                    domWidget.element.style.height = `${availH}px`;
+                } else {
+                    size[1] = Math.max(size[1], INITIAL_NODE_HEIGHT);
+                }
             };
 
             const onExecuted = nodeType.prototype.onExecuted;
@@ -150,13 +170,10 @@ app.registerExtension({
                         container.className = "ailab-download-display-container";
                         container.style.boxSizing = "border-box";
                         container.style.width = "100%";
-                        container.style.height = "100%";
                         container.style.margin = "0";
                         container.style.padding = "0 2px 4px 2px";
                         container.style.userSelect = "text";
                         container.style.cursor = "auto";
-                        container.style.display = "flex";
-                        container.style.flexDirection = "column";
                         container.style.overflow = "hidden";
 
                         domWidget = this.addDOMWidget("download_display", "display_element", container, {
@@ -172,19 +189,89 @@ app.registerExtension({
                         if (domWidget.options) {
                             domWidget.options.serialize = false;
                         }
+
+                        domWidget.computeSize = function (width) {
+                            return [width, 160];
+                        };
                     }
 
                     if (domWidget && domWidget.element) {
                         domWidget.element.innerHTML = richHtml;
 
+                        // Wire up the muted green copy JSON button (symmetrical with Completed badge)
+                        const copyBtn = domWidget.element.querySelector(".ailab-copy-json-btn");
+                        if (copyBtn && summaryData?.registration?.entry) {
+                            const regSnippet = JSON.stringify({ [summaryData.registration.key]: summaryData.registration.entry }, null, 2);
+                            copyBtn.onclick = async (e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                try {
+                                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                                        await navigator.clipboard.writeText(regSnippet);
+                                    } else {
+                                        const ta = document.createElement("textarea");
+                                        ta.value = regSnippet;
+                                        ta.style.position = "fixed";
+                                        ta.style.opacity = "0";
+                                        document.body.appendChild(ta);
+                                        ta.select();
+                                        document.execCommand("copy");
+                                        document.body.removeChild(ta);
+                                    }
+
+                                    // Smooth icon and color transition: green checkmark, zero layout jitter
+                                    copyBtn.innerHTML = CHECK_ICON_SVG;
+                                    copyBtn.style.color = "#38b26e";
+                                    copyBtn.style.borderColor = "rgba(56, 178, 110, 0.6)";
+                                    copyBtn.style.background = "rgba(46, 125, 50, 0.25)";
+
+                                    setTimeout(() => {
+                                        copyBtn.innerHTML = COPY_ICON_SVG;
+                                        copyBtn.style.color = "#38b26e";
+                                        copyBtn.style.borderColor = "rgba(56, 178, 110, 0.35)";
+                                        copyBtn.style.background = "rgba(46, 125, 50, 0.15)";
+                                    }, 1200);
+                                } catch (err) {
+                                    console.error("[QwenVL Downloader] Copy failed:", err);
+                                }
+                            };
+                            copyBtn.onmouseenter = () => {
+                                if (!copyBtn.innerHTML.includes("polyline")) {
+                                    copyBtn.style.color = "#4cd98a";
+                                    copyBtn.style.background = "rgba(46, 125, 50, 0.28)";
+                                    copyBtn.style.borderColor = "rgba(76, 217, 138, 0.5)";
+                                }
+                            };
+                            copyBtn.onmouseleave = () => {
+                                if (!copyBtn.innerHTML.includes("polyline")) {
+                                    copyBtn.style.color = "#38b26e";
+                                    copyBtn.style.background = "rgba(46, 125, 50, 0.15)";
+                                    copyBtn.style.borderColor = "rgba(56, 178, 110, 0.35)";
+                                }
+                            };
+                        }
+
                         requestAnimationFrame(() => {
-                            const card = domWidget.element.querySelector(".ailab-download-card") || domWidget.element;
-                            const cardH = card ? (card.scrollHeight || card.offsetHeight) : 260;
-                            const targetHeight = Math.ceil(BASE_INPUTS_HEIGHT + cardH + 10);
-                            const targetWidth = Math.max(this.size ? this.size[0] : 420, 420);
+                            const inputsBottom = getInputsBottom(this);
+
+                            // Calculate deterministic height directly from content to avoid DOM scrollHeight feedback loop
+                            let neededCardHeight = 365;
+                            if (summaryData?.registration?.entry) {
+                                const jsonSnippet = JSON.stringify({ [summaryData.registration.key]: summaryData.registration.entry }, null, 2);
+                                const lines = jsonSnippet.split("\n").length;
+                                const fileCount = (summaryData.files || []).length || 1;
+                                neededCardHeight = Math.max(155 + (fileCount * 18) + (lines * 16.5) + 30, 385);
+                            } else {
+                                const card = domWidget.element.querySelector(".ailab-download-card");
+                                neededCardHeight = card ? Math.max(card.scrollHeight, 240) : 260;
+                            }
+
+                            const targetHeight = Math.ceil(inputsBottom + neededCardHeight + 16);
+                            const targetWidth = Math.max(this.size ? this.size[0] : 440, 440);
+
+                            domWidget.element.style.height = `${neededCardHeight}px`;
 
                             this.size = [targetWidth, targetHeight];
-                            syncContentSize(this, this.size);
                             if (typeof this.setSize === "function") {
                                 this.setSize([targetWidth, targetHeight]);
                             }
