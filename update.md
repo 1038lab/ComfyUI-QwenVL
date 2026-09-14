@@ -2,6 +2,8 @@
 
 # Release Notes: v2.3.2 (2026-09-13)
 
+<img width="2048" height="1173" alt="53dbf10e-721f-494e-a834-34c4d25741c9" src="https://github.com/user-attachments/assets/c9182481-758d-4bd5-99bf-7b40330e4689" />
+
 ### 🚀 New Features & Enhancements
 - **Custom File Directories & Multi-Drive Model Loading (Issue https://github.com/1038lab/ComfyUI-QwenVL/issues/187)**:
   - **Seamless `extra_model_paths.yaml` Integration**: Models located on external drives or custom directories configured via ComfyUI's standard `extra_model_paths.yaml` are now automatically detected across all nodes (case-insensitively recognizing both uppercase `LLM` and lowercase `llm`, plus `gguf` directories).
