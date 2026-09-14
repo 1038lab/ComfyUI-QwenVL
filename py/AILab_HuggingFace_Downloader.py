@@ -10,6 +10,7 @@ from AILab_Utils import (
     folder_paths,
     safe_dirname,
 )
+from comfy.utils import ProgressBar
 
 
 def _update_custom_models_json(
@@ -134,7 +135,10 @@ class AILab_HuggingFaceDownloader:
             },
             "optional": {
                 "mmproj_filename": ("STRING", {"default": "", "tooltip": "Optional: Specific mmproj file to download (leave empty to auto-detect mmproj from repo)"}),
-            }
+            },
+            "hidden": {
+                "unique_id": "UNIQUE_ID",
+            },
         }
 
     RETURN_TYPES = ("STRING",)
@@ -151,6 +155,7 @@ class AILab_HuggingFaceDownloader:
         auto_add_to_custom_models=True,
         model_category="auto",
         mmproj_filename="",
+        unique_id=None,
         **kwargs,
     ):
         base_models_dir = Path(folder_paths.models_dir)
@@ -195,6 +200,9 @@ class AILab_HuggingFaceDownloader:
             print("[AILab Downloader] Using mirror endpoint: https://hf-mirror.com")
 
         try:
+            pbar = ProgressBar(3)
+            pbar.update_absolute(1, 3)
+
             try:
                 api = HfApi(endpoint=endpoint)
                 repo_files = api.list_repo_files(repo_id=repo_clean)
@@ -290,6 +298,8 @@ class AILab_HuggingFaceDownloader:
                 if local_mmprojs:
                     detected_mmproj = local_mmprojs[0].name
 
+            pbar.update_absolute(2, 3)
+
             registration_info = None
             if auto_add_to_custom_models:
                 registration_info = _update_custom_models_json(
@@ -300,6 +310,8 @@ class AILab_HuggingFaceDownloader:
                     model_type="vision_language" if is_vl else model_category,
                     mmproj_filename=detected_mmproj,
                 )
+
+            pbar.update_absolute(3, 3)
 
             # Build comprehensive model_info summary
             files_str = "\n  - ".join(downloaded_files_list) if downloaded_files_list else str(downloaded_path)
