@@ -32,6 +32,7 @@ from AILab_Utils import (
     load_system_prompts,
     parse_gguf_repos,
 )
+from comfy.utils import ProgressBar
 
 try:
     from llama_cpp import Llama
@@ -344,6 +345,9 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         device,
         seed,
     ):
+        pbar = ProgressBar(3)
+        pbar.update_absolute(1, 3, None)
+
         style_entry = self.styles.get(preset_system_prompt, {})
         system_prompt = (custom_system_prompt.strip() or style_entry.get("system_prompt") or "").strip()
         if not system_prompt:
@@ -355,7 +359,10 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
         )
         user_prompt = prompt_text.strip() or "Describe a scene vividly."
         merged_prompt = user_prompt
+
         self._load_model(model_name, device)
+        pbar.update_absolute(2, 3, None)
+
         enhanced = self._invoke_llama(
             system_prompt=system_prompt,
             user_prompt=merged_prompt,
@@ -382,6 +389,8 @@ class AILab_QwenVL_GGUF_PromptEnhancer:
             final = clean_model_output(translated, OutputCleanConfig(mode="prompt")) or translated.strip()
         else:
             final = clean_model_output(enhanced, OutputCleanConfig(mode="prompt")) or enhanced.strip()
+
+        pbar.update_absolute(3, 3, None)
         return (final,)
 
     @staticmethod

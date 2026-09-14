@@ -515,5 +515,3 @@ def resolve_safe_video_max_side(
             return safe_side
 
     return safe_side
-
-

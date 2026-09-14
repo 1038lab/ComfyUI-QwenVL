@@ -43,6 +43,7 @@ from AILab_Utils import (
     sample_video_frames,
     resolve_safe_video_max_side,
 )
+from comfy.utils import ProgressBar
 
 _prompts = load_system_prompts()
 PRESET_PROMPTS = _prompts["preset_prompts"]
@@ -554,6 +555,9 @@ class QwenVLGGUFBase:
                 if img:
                     images_b64.append(img)
 
+        pbar = ProgressBar(3)
+        pbar.update_absolute(1, 3, None)
+
         try:
             self._load_model(
                 model_name=model_name,
@@ -565,6 +569,8 @@ class QwenVLGGUFBase:
                 top_k=top_k,
                 pool_size=pool_size,
             )
+            pbar.update_absolute(2, 3, None)
+
             if images_b64 and self.chat_handler is None:
                 print("[QwenVL] Warning: images provided but this model entry has no mmproj_file; images will be ignored")
             text = self._invoke(
@@ -580,6 +586,7 @@ class QwenVLGGUFBase:
                 repetition_penalty=repetition_penalty,
                 seed=seed,
             )
+            pbar.update_absolute(3, 3, None)
             return (text,)
         finally:
             if not keep_model_loaded:
