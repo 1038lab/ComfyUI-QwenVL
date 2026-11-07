@@ -431,6 +431,11 @@ class QwenVLGGUFBase:
             "pool_size": pool_size_val,
             "top_k": top_k_val,
         }
+        if device_kind == "cuda":
+            # Flash attention also covers the vision encoder (mtmd follows the model's setting). Without it the
+            # encoder reserves its full attention matrix for the largest image: 4.7 GB for Qwen3.8 27B, which
+            # pushed Q4_K_M past 24 GB, and a failed cudaMalloc in ggml aborts the whole ComfyUI process.
+            llm_kwargs["flash_attn"] = True
         if has_mmproj and self.chat_handler is not None:
             llm_kwargs["chat_handler"] = self.chat_handler
             llm_kwargs["image_min_tokens"] = 1024
